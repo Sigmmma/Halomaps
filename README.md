@@ -7,19 +7,22 @@ src="https://www.gnu.org/graphics/agplv3-155x51.png">
 This is a read-only recreation of the Halomaps forum. Browse our hosted instance: [Link coming soon]
 
 ## Motivation
+
 On February 1, 2023, the forum of [Halomaps](http://halomaps.org) (http://forum.halomaps.org) was shut down. This forum was a long-standing, invaluable repository of knowledge for modding Halo CE. Prior to this shut down, the entirety of the forum was crawled and scraped using a [`wget` script](). This is a read-only recreation of that forum using the scraped content, in order to preserve it for the community.
 
 ## Download
-The archive can also be downloaded separately:
-- [As a series of mostly-complete HTML pages]()
-  - (Warning: unzips to a directory containing **52,000** files that total **1.6GB**! This can cripple some file browsers!)
-- [As a SQLite3 database]()
 
+The archive can also be downloaded separately:
+
+- [As a series of rendered HTML pages]()
+  - **Warning:** unzips to a directory containing **52,000** files that total **1.6GB**! This can cripple some file browsers!
+  - **Note:** the server that ran the mirror was on the US East Coast timezone (GMT-5:00), so all dates rendered in HTML are relative to that time.
+- [As a SQLite3 database]()
+  - [Schema definition](server/database/migrations/20230120054431_init.js)
 
 (Links will be filled in once this stuff is actually completed / hosted somewhere)
 
 ## License
 Copyright 2023 [Mimickal](https://github.com/Mimickal)<br/>
-This code is licensed under the
-[AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0-standalone.html) license.<br/>
+This code is licensed under the [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0-standalone.html) license.<br/>
 Basically, any modifications to this code must be made open source.
