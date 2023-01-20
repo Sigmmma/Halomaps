@@ -1,0 +1,24 @@
+{
+  "name": "halomaps-forum-server",
+  "version": "0.0.0",
+  "description": "A read-only server to browse the archive of http://forum.halomaps.org",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "knex": "npx knex --knexfile database/knexfile.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "halomaps",
+    "forum",
+    "archive",
+    "halo",
+    "modding"
+  ],
+  "author": "Mimickal <mimickal.dev@gmail.com>",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "knex": "^2.4.1",
+    "sqlite3": "^5.1.4"
+  }
+}
