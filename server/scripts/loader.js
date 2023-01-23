@@ -9,13 +9,14 @@ const USER_FILE_REGEX    = /page=userinfo&viewuserid=(\d+)/i;
 
 /** Allows us to apply and load mirror files in a specific order. */
 const FILE_PROCESSORS = [
-	[HOME_FILE_REGEX,    loadHomeFile],
 	[HOMECAT_FILE_REGEX, loadHomeCategoryFile],
+	[HOME_FILE_REGEX,    loadHomeFile],
 	//[USER_FILE_REGEX, loadUserFile],
 ];
 
 const TIMEZONE_OFFSET = 'GMT-0500'; // TODO parameterize this
 const RENDER_TIME_REGEX = /Time: ([\w,: ]+)/;
+const FORUM_ID_REGEX = /forumid=(\d+)/i;
 
 /**
  * Entry point for loading Halomaps files. Can handle a single file, or a
@@ -101,22 +102,94 @@ async function loadFile(filepath, pair) {
 // Rule of thumb -- Halomaps loves tables.
 
 /**
- * Handles: index.cfm?page=home
+ * Handles: index.cfm?page=home&categoryID=x
  *
- * We can extract all Category and Forum names and descriptions from the main
- * home page. The only thing missing is the Category ID, which we get in
- * {@link loadHomeCategoryFile}.
+ * Most information about Categories and Forums could be scraped from the main
+ * home page, but critically, the home page is missing Category ID. Forums
+ * belong to a Category, so we just extract both from these sub-home pages.
+ *
+ * Category sort order comes from {@link loadHomeFile}.
  *
  * @param {string} filepath
  * @param {HTMLElement} htmlRoot
  */
-async function loadHomeFile(filepath, htmlRoot) {
-	const extracted = [];
+async function loadHomeCategoryFile(filepath, htmlRoot) {
+	// Second table contains Category / Forum info
+	const forumTable = htmlRoot.querySelectorAll('table table')[1];
+	const forumTableRows = forumTable.querySelectorAll('tr');
+	forumTableRows.shift(); // Ignore constant header
+	const categoryRow = forumTableRows.shift();
+	forumTableRows.shift(); // Ignore "top" link in category
 
+	const categoryId = Number.parseInt(
+		HOMECAT_FILE_REGEX.exec(basename(filepath))[1]
+	);
+	const categoryName = categoryRow.querySelector('b').text;
+	const renderTime = extractRenderTime(htmlRoot);
+
+	// TODO insert into database
+	console.log('Category',
+	{
+		id: categoryId,
+		name: categoryName,
+		mirrored_at: renderTime,
+	}
+	);
+
+	// Remaining rows contain Forum info
+	// TODO insert into database
+	console.log('Forums',
+	forumTableRows.map((forumRow, index) => {
+		// The cell containing the Forum's name, description, and lock status
+		const forumInfo = forumRow.querySelectorAll('td')[1];
+
+		const lockImg     = forumInfo.querySelector('img');
+		const forumLocked = !!lockImg?.getAttribute('src')?.includes('icon_lock');
+
+		const forumLink = forumInfo.querySelector('a');
+		const forumName = forumLink.text;
+		const forumId   = Number.parseInt(
+			FORUM_ID_REGEX.exec(forumLink.getAttribute('href'))[1]
+		);
+
+		const forumDesc = forumInfo.querySelector('div').text;
+
+		return {
+			id:          forumId,
+			sort_index:  index,
+			name:        forumName,
+			locked:      forumLocked,
+			description: forumDesc,
+			category_id: categoryId,
+			mirrored_at: renderTime,
+		};
+	})
+	);
+}
+
+/**
+ * Handles: index.cfm?page=home
+ *
+ * Most of the work is already done by {@link loadHomeCategoryFile}. We just
+ * extract Category sort order and forum stats here.
+ *
+ * @param {string} filepath unused
+ * @param {HTMLElement} htmlRoot
+ */
+async function loadHomeFile(filepath, htmlRoot) {
 	const tables = htmlRoot.querySelectorAll('table table');
 	const forumTable = tables[1];
 	const statsTable = tables[7];
-	const renderTime = extractRenderTime(htmlRoot);
+
+	// Gives us Categories but not Forums
+	const categoryRows = forumTable.querySelectorAll('table tr');
+	// TODO update existing category rows
+	console.log('Category Sort',
+	categoryRows.map((row, index) => ({
+		sort_index: index,
+		name: row.querySelector('b').text,
+	}))
+	);
 
 	const STATS_REGEX = new RegExp([
 		/(\d+) users have contributed to /,
@@ -126,29 +199,17 @@ async function loadHomeFile(filepath, htmlRoot) {
 	].map(part => part.source).join(''), 'gs');
 	const match = STATS_REGEX.exec(statsTable.rawText);
 
+	const renderTime = extractRenderTime(htmlRoot);
 	// TODO stick this in the database
 	console.log('Stats',
 	[
-		{ name: 'users',  value: match.at(1) },
-		{ name: 'topics', value: match.at(2) },
-		{ name: 'posts',  value: match.at(3) },
+		{ name: 'users',          value: match.at(1) },
+		{ name: 'topics',         value: match.at(2) },
+		{ name: 'posts',          value: match.at(3) },
 		{ name: 'most_users_num', value: match.at(4) },
 		{ name: 'most_users_at',  value: stringToDate(match.at(5)) },
 	].map(row => ({...row, mirrored_at: renderTime}) )
 	);
-}
-
-/**
- * Handles: index.cfm?page=home&categoryID=x
- *
- * The categoryID pages are just used to extract Category IDs and match them to
- * Category names.
- *
- * @param {string} filepath
- * @param {HTMLElement} htmlRoot
- */
-async function loadHomeCategoryFile(filepath, htmlRoot) {
-
 }
 
 /**
