@@ -1,5 +1,6 @@
-const { readdir, stat } = require('fs').promises;
+const { readdir, readFile, stat } = require('fs').promises;
 const { join, basename } = require('path');
+const { HTMLElement, parse } = require('node-html-parser');
 
 // Need insensitive search since filenames in mirror mix cases.
 const HOME_FILE_REGEX    = /page=home$/i;
@@ -12,6 +13,9 @@ const FILE_PROCESSORS = [
 	[HOMECAT_FILE_REGEX, loadHomeCategoryFile],
 	//[USER_FILE_REGEX, loadUserFile],
 ];
+
+const TIMEZONE_OFFSET = 'GMT-0500'; // TODO parameterize this
+const RENDER_TIME_REGEX = /Time: ([\w,: ]+)/;
 
 /**
  * Entry point for loading Halomaps files. Can handle a single file, or a
@@ -83,9 +87,18 @@ async function loadFile(filepath, pair) {
 		return;
 	}
 
+	console.log(basename(filepath));
+
+	const htmlContent = await readFile(filepath);
+	const htmlRoot = parse(htmlContent);
+
 	const fileProcessor = pair[1];
-	fileProcessor(filepath);
+	fileProcessor(filepath, htmlRoot);
 }
+
+// The following is a series of jank CSS query selectors to scrape data from
+// equally jank rendered HTML pages. It's more art than science.
+// Rule of thumb -- Halomaps loves tables.
 
 /**
  * Handles: index.cfm?page=home
@@ -95,9 +108,34 @@ async function loadFile(filepath, pair) {
  * {@link loadHomeCategoryFile}.
  *
  * @param {string} filepath
+ * @param {HTMLElement} htmlRoot
  */
-async function loadHomeFile(filepath) {
-	console.log(basename(filepath));
+async function loadHomeFile(filepath, htmlRoot) {
+	const extracted = [];
+
+	const tables = htmlRoot.querySelectorAll('table table');
+	const forumTable = tables[1];
+	const statsTable = tables[7];
+	const renderTime = extractRenderTime(htmlRoot);
+
+	const STATS_REGEX = new RegExp([
+		/(\d+) users have contributed to /,
+		/(\d+) threads and (\d+) posts/,
+		/.*/,
+		/Most registered users online was (\d+) on ([\w:, ]+)/,
+	].map(part => part.source).join(''), 'gs');
+	const match = STATS_REGEX.exec(statsTable.rawText);
+
+	// TODO stick this in the database
+	console.log('Stats',
+	[
+		{ name: 'users',  value: match.at(1) },
+		{ name: 'topics', value: match.at(2) },
+		{ name: 'posts',  value: match.at(3) },
+		{ name: 'most_users_num', value: match.at(4) },
+		{ name: 'most_users_at',  value: stringToDate(match.at(5)) },
+	].map(row => ({...row, mirrored_at: renderTime}) )
+	);
 }
 
 /**
@@ -107,9 +145,10 @@ async function loadHomeFile(filepath) {
  * Category names.
  *
  * @param {string} filepath
+ * @param {HTMLElement} htmlRoot
  */
-async function loadHomeCategoryFile(filepath) {
-	console.log(basename(filepath));
+async function loadHomeCategoryFile(filepath, htmlRoot) {
+
 }
 
 /**
@@ -119,9 +158,39 @@ async function loadHomeCategoryFile(filepath) {
  * from their individual userInfo page.
  *
  * @param {string} filepath
+ * @param {HTMLElement} htmlRoot
  */
-async function loadUserFile(filepath) {
-	console.log(filepath);
+async function loadUserFile(filepath, htmlRoot) {
+
+}
+
+/**
+ * Extracts the page render time from the given HTML. Halomaps uses a consistent
+ * footer for this, so this should work for any rendered page.
+ *
+ * @param {HTMLElement} htmlRoot
+ */
+function extractRenderTime(htmlRoot) {
+	const tables = htmlRoot.querySelectorAll('table');
+	tables.pop(); // Last table is "Halomaps" footer
+	const timeTable = tables.pop(); // Second-to-last contains the render time.
+
+	const match = RENDER_TIME_REGEX.exec(timeTable?.text);
+	if (match) {
+		return stringToDate(match[1]);
+	}
+}
+
+/**
+ * Halomaps renders all dates in the same format. This converts the string to
+ * an actual JavaScript Date object.
+ *
+ * @param {string} date_str
+ */
+function stringToDate(date_str) {
+	return new Date(`${date_str} ${TIMEZONE_OFFSET}`);
+	// TODO handle "today"
+	// TODO handle "yesterday"
 }
 
 module.exports = {
