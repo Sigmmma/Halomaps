@@ -11,7 +11,7 @@ const USER_FILE_REGEX    = /page=userinfo&viewuserid=(\d+)/i;
 const FILE_PROCESSORS = [
 	[HOMECAT_FILE_REGEX, loadHomeCategoryFile],
 	[HOME_FILE_REGEX,    loadHomeFile],
-	//[USER_FILE_REGEX, loadUserFile],
+	[USER_FILE_REGEX,    loadUserFile],
 ];
 
 const TIMEZONE_OFFSET = 'GMT-0500'; // TODO parameterize this
@@ -222,7 +222,73 @@ async function loadHomeFile(filepath, htmlRoot) {
  * @param {HTMLElement} htmlRoot
  */
 async function loadUserFile(filepath, htmlRoot) {
+	const userId = Number.parseInt(
+		USER_FILE_REGEX.exec(basename(filepath))[1]
+	);
 
+	// TODO catch if we've already added this user (check by ID in database)
+
+	// User pages do not play nice with query selectors for some reason.
+	// Thankfully, the page structure is pretty consistent, so we can isolate
+	// profile info with this awful hard-coded nonsense instead.
+	let userInfoNodes = htmlRoot.childNodes[1].childNodes.slice(21, 70);
+
+	// Strip the blank nodes out of this list. Empty user info fields still
+	// have HTML tags in them, so we use .toString() instead of .text
+	// to remove the truly blank ones.
+	userInfoNodes = userInfoNodes.filter(
+		node => node.toString().trim().length > 0
+	);
+
+	// Catch blank user pages (like ID = 0)
+	if (userInfoNodes.length === 0) {
+		console.log('Skipping blank user page', userId);
+		return;
+	}
+
+	// Name and Avatar nodes need special handling, so pop those off
+	const nameNode = userInfoNodes.shift();
+	userInfoNodes.shift(); // Ignore "Contact" node
+	const avatarNode = userInfoNodes.pop();
+	userInfoNodes.pop(); // Ignore "Avatar" label node
+
+	// From this point on, empty strings indicate the value wasn't actually
+	// provided on the page, so treat those as null.
+
+	// What remains now is an alternating list of keys and values.
+	const userFields = {};
+	for (let i = 0; i < userInfoNodes.length; i += 2) {
+		const fieldName = userInfoNodes[i].text.split(':')[0];
+		userFields[fieldName] = userInfoNodes[i + 1].text || null;
+	}
+
+	const renderTime = extractRenderTime(htmlRoot);
+	const userName = nameNode.text.split(': ')[1].trim();
+	const userQuote = avatarNode.text.trim() || null;
+
+	// Get the avatar filename off of the image node. Remove the "avatars" root
+	// so we can use our own solution to statically serve these files later.
+	const userAvatar = avatarNode.childNodes[0]
+		.getAttribute('src')
+		.replace('avatars/', '');
+
+	console.log('User',
+	{
+		id:            userId,
+		name:          userName,
+		joined_at:     stringToDate(userFields['Joined']),
+		last_visit_at: stringToDate(userFields['Last Visit']),
+		special:       undefined,
+		avatar:        userAvatar,
+		quote:         userQuote,
+		location:      userFields['Location'],
+		occupation:    userFields['Occupation'],
+		interests:     userFields['Interests'],
+		age:           userFields['Your Age'],
+		games_played:  userFields['What Games do you play'],
+		mirrored_at:   renderTime,
+	}
+	);
 }
 
 /**
@@ -232,6 +298,8 @@ async function loadUserFile(filepath, htmlRoot) {
  * @param {HTMLElement} htmlRoot
  */
 function extractRenderTime(htmlRoot) {
+	// TODO this doesn't play nice with kirby_422's user page (id 728)
+
 	const tables = htmlRoot.querySelectorAll('table');
 	tables.pop(); // Last table is "Halomaps" footer
 	const timeTable = tables.pop(); // Second-to-last contains the render time.
