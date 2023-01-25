@@ -327,7 +327,8 @@ function extractRenderTime(htmlRoot) {
 	// The above doesn't work with a select few pages, so we need a fallback.
 	// (e.g. kirby_422's user page [id 728]).
 
-	const fallbackMatch = RENDER_TIME_REGEX.exec(htmlRoot.textContent);
+	const endOfPageSnippet = htmlRoot.textContent.slice(-1000);
+	const fallbackMatch = RENDER_TIME_REGEX.exec(endOfPageSnippet);
 	if (fallbackMatch) {
 		return fallbackMatch[1];
 	}
