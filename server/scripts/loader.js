@@ -1,6 +1,7 @@
 const { readdir, readFile, stat } = require('fs').promises;
 const { join, basename } = require('path');
-const { HTMLElement, parse } = require('node-html-parser');
+const { DateTime } = require('luxon');
+const { HTMLElement, parse: parseHtml } = require('node-html-parser');
 
 // Need insensitive search since filenames in mirror mix cases.
 const HOME_FILE_REGEX    = /page=home$/i;
@@ -14,8 +15,12 @@ const FILE_PROCESSORS = [
 	[USER_FILE_REGEX,    loadUserFile],
 ];
 
-const TIMEZONE_OFFSET = 'GMT-0500'; // TODO parameterize this
+const MIRROR_TIMEZONE = 'America/New_York'; // TODO parameterize this
 const RENDER_TIME_REGEX = /Time: ([\w,: ]+)/;
+const TIME_FORMATS = [
+	'MMM d, yyyy h:mm a',      // Sep 30, 2006 09:29 PM
+	'EEE MMMM d, yyyy h:mm a', // Wed January 18, 2023 11:50 PM
+];
 const FORUM_ID_REGEX = /forumid=(\d+)/i;
 
 /**
@@ -91,7 +96,7 @@ async function loadFile(filepath, pair) {
 	console.log(basename(filepath));
 
 	const htmlContent = await readFile(filepath);
-	const htmlRoot = parse(htmlContent);
+	const htmlRoot = parseHtml(htmlContent);
 
 	const fileProcessor = pair[1];
 	fileProcessor(filepath, htmlRoot);
@@ -125,7 +130,7 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 		HOMECAT_FILE_REGEX.exec(basename(filepath))[1]
 	);
 	const categoryName = categoryRow.querySelector('b').text;
-	const renderTime = extractRenderTime(htmlRoot);
+	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
 	// TODO insert into database
 	console.log('Category',
@@ -199,7 +204,10 @@ async function loadHomeFile(filepath, htmlRoot) {
 	].map(part => part.source).join(''), 'gs');
 	const match = STATS_REGEX.exec(statsTable.rawText);
 
-	const renderTime = extractRenderTime(htmlRoot);
+	const renderTimeStr = extractRenderTime(htmlRoot);
+	const renderTime = stringToDate(renderTimeStr);
+	const mostUsersAt = stringToDate(match.at(5), renderTimeStr);
+
 	// TODO stick this in the database
 	console.log('Stats',
 	[
@@ -207,8 +215,8 @@ async function loadHomeFile(filepath, htmlRoot) {
 		{ name: 'topics',         value: match.at(2) },
 		{ name: 'posts',          value: match.at(3) },
 		{ name: 'most_users_num', value: match.at(4) },
-		{ name: 'most_users_at',  value: stringToDate(match.at(5)) },
-	].map(row => ({...row, mirrored_at: renderTime}) )
+		{ name: 'most_users_at',  value: mostUsersAt },
+	].map(row => ({ ...row, mirrored_at: renderTime }) )
 	);
 }
 
@@ -276,8 +284,8 @@ async function loadUserFile(filepath, htmlRoot) {
 	{
 		id:            userId,
 		name:          userName,
-		joined_at:     stringToDate(userFields['Joined']),
-		last_visit_at: stringToDate(userFields['Last Visit']),
+		joined_at:     stringToDate(userFields['Joined'], renderTime),
+		last_visit_at: stringToDate(userFields['Last Visit'], renderTime),
 		special:       undefined,
 		avatar:        userAvatar,
 		quote:         userQuote,
@@ -286,7 +294,7 @@ async function loadUserFile(filepath, htmlRoot) {
 		interests:     userFields['Interests'],
 		age:           userFields['Your Age'],
 		games_played:  userFields['What Games do you play'],
-		mirrored_at:   renderTime,
+		mirrored_at:   stringToDate(renderTime),
 	}
 	);
 }
@@ -294,6 +302,10 @@ async function loadUserFile(filepath, htmlRoot) {
 /**
  * Extracts the page render time from the given HTML. Halomaps uses a consistent
  * footer for this, so this should work for any rendered page.
+ *
+ * This is the date string with the timezone offset baked into it. We keep this
+ * as a string to have an easier time resolving dates like "Today @ <time>".
+ * Use {@link stringToDate} to get a {@link Date} object.
  *
  * @param {HTMLElement} htmlRoot
  */
@@ -306,20 +318,76 @@ function extractRenderTime(htmlRoot) {
 
 	const match = RENDER_TIME_REGEX.exec(timeTable?.text);
 	if (match) {
-		return stringToDate(match[1]);
+		return match[1];
 	}
 }
 
 /**
  * Halomaps renders all dates in the same format. This converts the string to
- * an actual JavaScript Date object.
+ * an actual JavaScript Date object. Has special handling to process dates like
+ * "Today @ <time>".
+ *
+ * A NOTE ON TIMEZONES:
+ *
+ * All dates rendered in the HTML are relative to the timezone of the server
+ * that requested the HTML. This includes dates like "Today @ <time>".
+ *
+ * @param {string} date_str
+ * @param {string} reference_date date string (usually from
+ *   {@link extractRenderTime}) to resolve dates like "Today @ <time>".
+ */
+function stringToDate(date_str, reference_date) {
+	if (date_str.startsWith('Today') || date_str.startsWith('Yesterday')) {
+		if (!reference_date) {
+			throw new Error(`No reference given to resolve date: ${date_str}`);
+		}
+
+		// Page mirror time with timezone baked in
+		let datetime = stringToDateInner(reference_date);
+
+		// Looks like "Yesterday @ 12:34 PM"
+		const [day, time] = date_str.split(' @ ');
+
+		if (day === 'Yesterday') {
+			datetime = datetime.minus({ days: 1 });
+		}
+
+		// Parse the "12:34 PM" portion of the relative date.
+		// Note: This is just a convenient way to get 24-hour time from an AM/PM
+		// timestamp. This DateTime will also use the current day, but we ignore
+		// that information.
+		const offset = DateTime.fromFormat(time, 'h:mm a', {
+			zone: MIRROR_TIMEZONE
+		});
+
+		datetime = datetime.set({
+			hour: offset.hour,
+			minute: offset.minute,
+		});
+
+		return datetime.toJSDate();
+	} else {
+		return stringToDateInner(date_str).toJSDate();
+	}
+}
+
+/**
+ * Common parse routine for actual dates. Parses to DateTime objects that are
+ * aware of the baked-in timezone offset.
+ *
+ * Dates can come in a few formats, so find one that matches
+ * (see {@link TIME_FORMATS}).
  *
  * @param {string} date_str
  */
-function stringToDate(date_str) {
-	return new Date(`${date_str} ${TIMEZONE_OFFSET}`);
-	// TODO handle "today"
-	// TODO handle "yesterday"
+function stringToDateInner(date_str) {
+	for (fmt of TIME_FORMATS) {
+		const dt = DateTime.fromFormat(date_str, fmt, { zone: MIRROR_TIMEZONE });
+		if (dt.isValid) {
+			return dt;
+		}
+	}
+	throw new Error(`Cannot parse date: ${date_str}`);
 }
 
 module.exports = {

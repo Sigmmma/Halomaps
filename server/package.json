@@ -19,6 +19,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "knex": "^2.4.1",
+    "luxon": "^3.2.1",
     "minimist": "^1.2.7",
     "node-html-parser": "^6.1.4",
     "sqlite3": "^5.1.4"
