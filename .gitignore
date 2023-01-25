@@ -2,3 +2,5 @@ node_modules
 *.sqlite
 server/samples
 todo
+forum.halomaps.org
+stats.txt
