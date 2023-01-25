@@ -262,8 +262,8 @@ async function loadUserFile(filepath, htmlRoot) {
 	// Name and Avatar nodes need special handling, so pop those off
 	const nameNode = userInfoNodes.shift();
 	userInfoNodes.shift(); // Ignore "Contact" node
-	const avatarNode = userInfoNodes.pop();
-	userInfoNodes.pop(); // Ignore "Avatar" label node
+	const avatarNode      = userInfoNodes.pop();
+	const avatarLabelNode = userInfoNodes.pop();
 
 	// From this point on, empty strings indicate the value wasn't actually
 	// provided on the page, so treat those as null.
@@ -272,18 +272,24 @@ async function loadUserFile(filepath, htmlRoot) {
 	const userFields = {};
 	for (let i = 0; i < userInfoNodes.length; i += 2) {
 		const fieldName = userInfoNodes[i].text.split(':')[0];
-		userFields[fieldName] = userInfoNodes[i + 1].text || null;
+		userFields[fieldName] = userInfoNodes[i + 1]?.text || null;
 	}
 
 	const renderTime = extractRenderTime(htmlRoot);
 	const userName = nameNode.text.split(': ')[1].trim();
-	const userQuote = avatarNode.text.trim() || null;
 
+	// The avatar node contains both the user's image and quote.
 	// Get the avatar filename off of the image node. Remove the "avatars" root
 	// so we can use our own solution to statically serve these files later.
-	const userAvatar = avatarNode.childNodes[0]
-		.getAttribute('src')
-		.replace('avatars/', '');
+	// If the user doesn't have an avatar, this node has no good info.
+	let userAvatar = null;
+	let userQuote  = null;
+	if (avatarLabelNode.text.includes('Avatar')) {
+		userAvatar = avatarNode.childNodes[0]
+			?.getAttribute('src')
+			?.replace('avatars/', '');
+		userQuote = avatarNode.text.trim() || null;
+	}
 
 	console.log('User',
 	{
