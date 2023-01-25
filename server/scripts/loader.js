@@ -16,7 +16,12 @@ const FILE_PROCESSORS = [
 ];
 
 const MIRROR_TIMEZONE = 'America/New_York'; // TODO parameterize this
-const RENDER_TIME_REGEX = /Time: ([\w,: ]+)/;
+
+// Matches both of these:
+// <b>Time:</b> Wed January 18, 2023 11:32 PM
+// Time: Wed January 18, 2023 11:32 PM
+const RENDER_TIME_REGEX = /(?:<b>)?Time:(?:<\/b>)? ([\w,: ]+)/;
+
 const TIME_FORMATS = [
 	'MMM d, yyyy h:mm a',      // Sep 30, 2006 09:29 PM
 	'EEE MMMM d, yyyy h:mm a', // Wed January 18, 2023 11:50 PM
@@ -95,7 +100,7 @@ async function loadFile(filepath, pair) {
 
 	console.log(basename(filepath));
 
-	const htmlContent = await readFile(filepath);
+	const htmlContent = await readFile(filepath, { encoding: 'utf-8' });
 	const htmlRoot = parseHtml(htmlContent);
 
 	const fileProcessor = pair[1];
@@ -310,8 +315,6 @@ async function loadUserFile(filepath, htmlRoot) {
  * @param {HTMLElement} htmlRoot
  */
 function extractRenderTime(htmlRoot) {
-	// TODO this doesn't play nice with kirby_422's user page (id 728)
-
 	const tables = htmlRoot.querySelectorAll('table');
 	tables.pop(); // Last table is "Halomaps" footer
 	const timeTable = tables.pop(); // Second-to-last contains the render time.
@@ -320,6 +323,16 @@ function extractRenderTime(htmlRoot) {
 	if (match) {
 		return match[1];
 	}
+
+	// The above doesn't work with a select few pages, so we need a fallback.
+	// (e.g. kirby_422's user page [id 728]).
+
+	const fallbackMatch = RENDER_TIME_REGEX.exec(htmlRoot.textContent);
+	if (fallbackMatch) {
+		return fallbackMatch[1];
+	}
+
+	throw new Error('Failed to extract mirror time');
 }
 
 /**
