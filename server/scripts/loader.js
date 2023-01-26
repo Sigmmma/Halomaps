@@ -229,7 +229,8 @@ async function loadHomeFile(filepath, htmlRoot) {
  * Handles: index.cfm?page=userInfo&viewuserid=x
  *
  * All information for a User, other than their special field, can be extracted
- * from their individual userInfo page.
+ * from their individual userInfo page. Unless they don't have an avatar, then
+ * they could have a quote that only renders on their posts.
  *
  * @param {string} filepath
  * @param {HTMLElement} htmlRoot
@@ -259,11 +260,16 @@ async function loadUserFile(filepath, htmlRoot) {
 		return;
 	}
 
-	// Name and Avatar nodes need special handling, so pop those off
+	// Name node need special handling, so pop those off
 	const nameNode = userInfoNodes.shift();
-	userInfoNodes.shift(); // Ignore "Contact" node
-	const avatarNode      = userInfoNodes.pop();
-	const avatarLabelNode = userInfoNodes.pop();
+	userInfoNodes.shift(); // Ignore "Contact" label node
+
+	// Avatar node needs special handling too, but isn't present if user has no avatar
+	let avatarNode;
+	if (userInfoNodes.at(-2).toString().includes('Avatar')) {
+		avatarNode = userInfoNodes.pop();
+		userInfoNodes.pop(); // Ignore "Avatar" label node
+	}
 
 	// From this point on, empty strings indicate the value wasn't actually
 	// provided on the page, so treat those as null.
@@ -279,12 +285,14 @@ async function loadUserFile(filepath, htmlRoot) {
 	const userName = nameNode.text.split(': ')[1].trim();
 
 	// The avatar node contains both the user's image and quote.
+	// If the user does not have an avatar, this node is not present at all,
+	// EVEN IF they do have a quote.
+	//
 	// Get the avatar filename off of the image node. Remove the "avatars" root
 	// so we can use our own solution to statically serve these files later.
-	// If the user doesn't have an avatar, this node has no good info.
 	let userAvatar = null;
 	let userQuote  = null;
-	if (avatarLabelNode.text.includes('Avatar')) {
+	if (avatarNode) {
 		userAvatar = avatarNode.childNodes[0]
 			?.getAttribute('src')
 			?.replace('avatars/', '');
