@@ -7,12 +7,15 @@ const { HTMLElement, parse: parseHtml } = require('node-html-parser');
 const HOME_FILE_REGEX    = /page=home$/i;
 const HOMECAT_FILE_REGEX = /page=home&categoryid=(\d+)/i;
 const USER_FILE_REGEX    = /page=userinfo&viewuserid=(\d+)/i;
+const FORUM_FILE_REGEX   = /page=forum&forumid=(\d+)(?:&start=(\d+))?/i;
+const TOPIC_FILE_REGEX   = /page=topic&topicid=(\d+)(?:&start=(\d+))?/i;
 
 /** Allows us to apply and load mirror files in a specific order. */
 const FILE_PROCESSORS = [
 	[HOMECAT_FILE_REGEX, loadHomeCategoryFile],
 	[HOME_FILE_REGEX,    loadHomeFile],
 	[USER_FILE_REGEX,    loadUserFile],
+	[FORUM_FILE_REGEX,   loadForumFile],
 ];
 
 const MIRROR_TIMEZONE = 'America/New_York'; // TODO parameterize this
@@ -299,6 +302,7 @@ async function loadUserFile(filepath, htmlRoot) {
 		userQuote = avatarNode.text.trim() || null;
 	}
 
+	// TODO put this in the database
 	console.log('User',
 	{
 		id:            userId,
@@ -316,6 +320,86 @@ async function loadUserFile(filepath, htmlRoot) {
 		mirrored_at:   stringToDate(renderTime),
 	}
 	);
+}
+
+/**
+ * Handles:
+ *   - index.cfm?page=forum&forumID=x
+ *   - index.cfm?page=forum&forumID=x&start=y
+ *
+ * Gives us everything for a Topic except its created_at timestamp.
+ * We derive created_at from the first post in {@link loadTopicFile}.
+ *
+ * @param {string} filepath
+ * @param {HTMLElement} htmlRoot
+ */
+async function loadForumFile(filepath, htmlRoot) {
+	const forumId = Number.parseInt(FORUM_FILE_REGEX.exec(filepath)[1]);
+	const renderTime = stringToDate(extractRenderTime(htmlRoot));
+
+	const topicTableRows = htmlRoot
+		.querySelectorAll('table table')[2] // Topic table
+		.querySelectorAll('tr');            // Topic rows within table
+	topicTableRows.shift(); // Ignore header row
+	topicTableRows.shift(); // Ignore moderator row
+
+	const topics = [];
+	for await (topicRow of topicTableRows) {
+		const topicData = extractTopicInfoFromRow(topicRow);
+
+		const authorName = topicData.authorName;
+		delete topicData.authorName;
+
+		// TODO lookup author by name in database
+
+		topics.push({
+			...topicData,
+			forum_id:    forumId,
+			author_id:   undefined,
+			created_at:  undefined,  // We'll get this later from Posts.
+			mirrored_at: renderTime,
+		})
+	}
+
+	// TODO read author_id from database from author name
+
+	// TODO put these in the database
+	console.log('Topics', topics)
+}
+
+/**
+ * Extracts Topic info from the table on a forum page.
+ * Returns a partial Topic record, as well as the Topic author's name.
+ *
+ * @param {HTMLTableRowElement} htmlRow
+ */
+function extractTopicInfoFromRow(htmlRow) {
+	// Every Topic row has an icon. If the Topic is locked, this icon is
+	// different. Pinned Topics also have a little paper clip icon.
+	const [iconImage, pinImage] = htmlRow.querySelectorAll('img');
+	const topicLocked = iconImage.getAttribute('src').includes('locked');
+	const topicPinned = !!pinImage?.getAttribute('src').includes('clip');
+
+	// The first link in a row always contains both the Topic ID and name.
+	const topicLink = htmlRow.querySelector('a');
+	const topicName = topicLink.text;
+	const topicId   = Number.parseInt(
+		TOPIC_FILE_REGEX.exec(topicLink.getAttribute('href'))[1]
+	);
+
+	// span elements contain author name, total posts, and total views.
+	const spans = htmlRow.querySelectorAll('span');
+	const authorName = spans[0].text;
+	const topicViews = Number.parseInt(spans[2].text);
+
+	return {
+		id:         topicId,
+		name:       topicName,
+		views:      topicViews,
+		pinned:     topicPinned,
+		locked:     topicLocked,
+		authorName: authorName, // Not a database column, but needed for lookup.
+	}
 }
 
 /**
