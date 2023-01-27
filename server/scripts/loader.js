@@ -381,11 +381,25 @@ function extractTopicInfoFromRow(htmlRow) {
 	const topicLocked = iconImage.getAttribute('src').includes('locked');
 	const topicPinned = !!pinImage?.getAttribute('src').includes('clip');
 
-	// The first link in a row always contains both the Topic ID and name.
-	const topicLink = htmlRow.querySelector('a');
-	const topicName = topicLink.text;
+	// The first link in a row USUALLY contains both the Topic ID and name.
+	// In the rare case a Topic was moved, the first link will be the link to
+	// the Forum it was moved from, and the second has the ID and name.
+	const rowLinks = htmlRow.querySelectorAll('a');
+	let topicLinkNode;
+	let topicMovedFrom;
+	if (FORUM_FILE_REGEX.test(rowLinks[0].getAttribute('href'))) {
+		topicLinkNode  = rowLinks[1];
+		topicMovedFrom = Number.parseInt(
+			FORUM_FILE_REGEX.exec(rowLinks[0].getAttribute('href'))[1]
+		);
+	} else {
+		topicLinkNode  = rowLinks[0];
+		topicMovedFrom = null;
+	}
+
+	const topicName = topicLinkNode.text;
 	const topicId   = Number.parseInt(
-		TOPIC_FILE_REGEX.exec(topicLink.getAttribute('href'))[1]
+		TOPIC_FILE_REGEX.exec(topicLinkNode.getAttribute('href'))[1]
 	);
 
 	// span elements contain author name, total posts, and total views.
@@ -399,6 +413,7 @@ function extractTopicInfoFromRow(htmlRow) {
 		views:      topicViews,
 		pinned:     topicPinned,
 		locked:     topicLocked,
+		moved_from: topicMovedFrom,
 		authorName: authorName, // Not a database column, but needed for lookup.
 	}
 }
