@@ -16,6 +16,7 @@ const FILE_PROCESSORS = [
 	[HOME_FILE_REGEX,    loadHomeFile],
 	[USER_FILE_REGEX,    loadUserFile],
 	[FORUM_FILE_REGEX,   loadForumFile],
+	[TOPIC_FILE_REGEX,   loadTopicFile],
 ];
 
 const MIRROR_TIMEZONE = 'America/New_York'; // TODO parameterize this
@@ -29,7 +30,9 @@ const TIME_FORMATS = [
 	'MMM d, yyyy h:mm a',      // Sep 30, 2006 09:29 PM
 	'EEE MMMM d, yyyy h:mm a', // Wed January 18, 2023 11:50 PM
 ];
-const FORUM_ID_REGEX = /forumid=(\d+)/i;
+const FORUM_ID_REGEX  = /forumid=(\d+)/i;
+const POST_ID_REGEX   = /replyid=(\d+)/i;
+const POST_TIME_REGEX = /Posted: ([\w,:@ ]+)/;
 
 /**
  * Entry point for loading Halomaps files. Can handle a single file, or a
@@ -361,14 +364,12 @@ async function loadForumFile(filepath, htmlRoot) {
 		})
 	}
 
-	// TODO read author_id from database from author name
-
 	// TODO put these in the database
 	console.log('Topics', topics)
 }
 
 /**
- * Extracts Topic info from the table on a forum page.
+ * Extracts Topic info from a row of the Topic table on a Forum page.
  * Returns a partial Topic record, as well as the Topic author's name.
  *
  * @param {HTMLTableRowElement} htmlRow
@@ -400,6 +401,147 @@ function extractTopicInfoFromRow(htmlRow) {
 		locked:     topicLocked,
 		authorName: authorName, // Not a database column, but needed for lookup.
 	}
+}
+
+/**
+ * Handles: index.cfm?page=topic&topicID=x
+ *
+ * All posts for a Topic come from these pages.
+ * The Topic's created_at time is derived from the first post in the Topic.
+ * User quotes are rendered in Topics, even if they don't have an avatar image.
+ * User special strings are also rendered in Topics.
+ *
+ * @param {string} filepath
+ * @param {HTMLElement} htmlRoot
+ */
+async function loadTopicFile(filepath, htmlRoot) {
+	const topicMatch = TOPIC_FILE_REGEX.exec(filepath);
+	const topicId     = Number.parseInt(topicMatch[1]);
+	const isFirstPage = !topicMatch[2];
+
+	const renderTimeStr = extractRenderTime(htmlRoot);
+	const renderTime    = stringToDate(renderTimeStr);
+
+	let postRows = htmlRoot
+		.querySelectorAll('table table')[2] // Post table
+		.querySelectorAll('tr');            // Post rows
+
+	postRows.shift(); // Ignore topic title row
+	postRows.shift(); // Ignore moderator row
+	postRows.pop();   // Ignore empty end row
+
+	// Each Post is split across two sequential rows:
+	// The first row has the User, Post created_at, and Post content.
+	// The second row has the Post's ID.
+	//
+	// Also, since posts are the only sure place to get a User's special text
+	// and quote, we'll grab those too.
+	const posts = [];
+	const users = [];
+	let topicCreationTime;
+	for (let i = 0; i < postRows.length; i += 2) {
+		const data = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
+
+		const createdStr = data.post.createdStr;
+		delete data.post.createdStr;
+		data.post.created_at = stringToDate(createdStr, renderTimeStr);
+
+		// Derive Topic created_at timestamp from first Post of first page.
+		if (isFirstPage && i === 0) {
+			topicCreationTime = data.post.created_at;
+		}
+
+		users.push(data.user);
+		posts.push({
+			...data.post,
+			topic_id:    topicId,
+			mirrored_at: renderTime,
+		});
+	}
+
+	// TODO put these in database
+	console.log('Topic', {
+		id:         topicId,
+		created_at: topicCreationTime,
+	})
+	console.log('Posts', posts);
+	// TODO only update user if the respective field is null
+	console.log('User updates', users);
+}
+
+/**
+ * Extracts Post info from two subsequent rows of the Post table on a Topic page.
+ * Also gets User quotes and possible special fields.
+ *
+ * @param {HTMLTableRowElement} postRow
+ * @param {HTMLTableRowElement} idRow
+ */
+function extractPostInfoFromRows(postRow, idRow) {
+
+	// Post rows have two cells -- the user info, and the post content.
+	const cellNodes = postRow.querySelectorAll('td');
+	const userNode = cellNodes[0];
+	const postNode = cellNodes[1];
+
+	// First link contains link to author's User page, and thus, User's ID.
+	const authorId = Number.parseInt(USER_FILE_REGEX.exec(
+		userNode.querySelector('a').getAttribute('href')
+	)[1]);
+
+	// Avatar quote has a unique class "avatar" we can select on.
+	const userQuote = userNode.querySelector('span.avatar')?.text;
+
+	// User special info can be an image (Dennis' moderator badge) or a text
+	// node (Maniac's "helpful user" label). There's not a great way to
+	// select this, so just grab whatever comes after the User link that isn't
+	// the User join date (if anything).
+	const specialTextNode = userNode.childNodes[6];
+	const specialImgNode  = userNode.childNodes[7];
+
+	// Yes, this is kind of dumb, but it'll help catch other specials.
+	let userSpecial = null;
+	if (specialTextNode.text.trim().length > 0) {
+		userSpecial = specialTextNode.text.trim();
+	} else if (specialImgNode && specialImgNode.rawTagName === 'img') {
+		if (specialImgNode.getAttribute('src').includes('moderator')) {
+			userSpecial = 'moderator';
+		} else {
+			throw new Error(
+				`User had special image ${specialImgNode.getAttribute('src')}`
+			);
+		}
+	}
+
+	// Post time always appears first as a "strong" tag.
+	const postCreatedStr = POST_TIME_REGEX.exec(
+		postRow.querySelector('strong').text
+	)[1];
+
+	// Post content is easy. It appears in a div with a unique ID.
+	// Posts are formatted using embedded HTML. Users could edit this HTML
+	// directly when editing their post, so there's not really any good way
+	// to sanitize this without losing information.
+	const postContent = postRow.querySelector('div#messagearea').innerHTML;
+
+	// The button for replying to a post contains a link with the Post's ID.
+	const replyLinkNode = idRow.querySelector('a');
+	const postId = Number.parseInt(
+		POST_ID_REGEX.exec(replyLinkNode.getAttribute('href'))[1]
+	);
+
+	return {
+		user: {
+			id:      authorId,
+			quote:   userQuote,
+			special: userSpecial,
+		},
+		post: {
+			id:          postId,
+			author_id:   authorId,
+			content:     postContent,
+			createdStr:  postCreatedStr, // Return as string we resolve later.
+		}
+	};
 }
 
 /**
