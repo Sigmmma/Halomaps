@@ -341,8 +341,15 @@ async function loadForumFile(filepath, htmlRoot) {
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
 	const topicTableRows = htmlRoot
-		.querySelectorAll('table table')[2] // Topic table
-		.querySelectorAll('tr');            // Topic rows within table
+		.querySelectorAll('table table')[2]  // Topic table
+		?.querySelectorAll('tr');            // Topic rows within table
+
+	// There's at least one invalid Forum page in the mirror (ID = 19).
+	if (!topicTableRows) {
+		console.log('Ignoring empty forum', forumId);
+		return;
+	}
+
 	topicTableRows.shift(); // Ignore header row
 	topicTableRows.shift(); // Ignore moderator row
 
