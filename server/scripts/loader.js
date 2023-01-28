@@ -1,14 +1,14 @@
 const { readdir, readFile, stat } = require('fs').promises;
 const { join, basename } = require('path');
+const { JSDOM } = require('jsdom');
 const { DateTime } = require('luxon');
-const { HTMLElement, parse: parseHtml } = require('node-html-parser');
 
 // Need insensitive search since filenames in mirror mix cases.
-const HOME_FILE_REGEX    = /page=home$/i;
-const HOMECAT_FILE_REGEX = /page=home&categoryid=(\d+)/i;
-const USER_FILE_REGEX    = /page=userinfo&viewuserid=(\d+)/i;
-const FORUM_FILE_REGEX   = /page=forum&forumid=(\d+)(?:&start=(\d+))?/i;
-const TOPIC_FILE_REGEX   = /page=topic&topicid=(\d+)(?:&start=(\d+))?/i;
+const HOME_FILE_REGEX    = /index.cfm(?:\?|%3F)page=home$/i;
+const HOMECAT_FILE_REGEX = /index.cfm(?:\?|%3F)page=home&categoryid=(\d+)/i;
+const USER_FILE_REGEX    = /index.cfm(?:\?|%3F)page=userinfo&viewuserid=(\d+)/i;
+const FORUM_FILE_REGEX   = /index.cfm(?:\?|%3F)page=forum&forumid=(\d+)(?:&start=(\d+))?/i;
+const TOPIC_FILE_REGEX   = /index.cfm(?:\?|%3F)page=topic&topicid=(\d+)(?:&start=(\d+))?/i;
 
 /** Allows us to apply and load mirror files in a specific order. */
 const FILE_PROCESSORS = [
@@ -107,10 +107,18 @@ async function loadFile(filepath, pair) {
 	console.log(basename(filepath));
 
 	const htmlContent = await readFile(filepath, { encoding: 'utf-8' });
-	const htmlRoot = parseHtml(htmlContent);
+	const document = new JSDOM(htmlContent).window.document;
+
+	// Some pages in the mirror are empty stubs with just the common header.
+	if (document.querySelector('body > table > tbody > tr:nth-child(2)')
+		.textContent.trim().length === 0
+	) {
+		console.log('Skipping stub file');
+		return;
+	}
 
 	const fileProcessor = pair[1];
-	fileProcessor(filepath, htmlRoot);
+	fileProcessor(filepath, document);
 }
 
 // The following is a series of jank CSS query selectors to scrape data from
@@ -122,32 +130,37 @@ async function loadFile(filepath, pair) {
  *
  * Most information about Categories and Forums could be scraped from the main
  * home page, but critically, the home page is missing Category ID. Forums
- * belong to a Category, so we just extract both from these sub-home pages.
+ * belong to a Category, so the Category record needs to exist before we can
+ * create the Forum record. Therefore, we process these sub-home pages first.
  *
  * Category sort order comes from {@link loadHomeFile}.
  *
  * @param {string} filepath
- * @param {HTMLElement} htmlRoot
+ * @param {Document} htmlRoot
  */
 async function loadHomeCategoryFile(filepath, htmlRoot) {
-	// Second table contains Category / Forum info
-	const forumTable = htmlRoot.querySelectorAll('table table')[1];
-	const forumTableRows = forumTable.querySelectorAll('tr');
-	forumTableRows.shift(); // Ignore constant header
-	const categoryRow = forumTableRows.shift();
-	forumTableRows.shift(); // Ignore "top" link in category
-
 	const categoryId = Number.parseInt(
 		HOMECAT_FILE_REGEX.exec(basename(filepath))[1]
 	);
-	const categoryName = categoryRow.querySelector('b').text;
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
+
+	// Second table contains Category / Forum info
+	//const forumTable = htmlRoot.querySelector('table table:nth-child(2)');
+	const forumRows = Array.from(htmlRoot
+		.querySelector('table table:nth-child(2)')
+		.querySelectorAll('tr')
+	);
+	forumRows.shift(); // Ignore constant header
+	forumRows.shift(); // Ignore outer Category row
+	const categoryRow = forumRows.shift();
+
+	const categoryName = categoryRow.querySelector('b').textContent;
 
 	// TODO insert into database
 	console.log('Category',
 	{
-		id: categoryId,
-		name: categoryName,
+		id:          categoryId,
+		name:        categoryName,
 		mirrored_at: renderTime,
 	}
 	);
@@ -155,20 +168,22 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 	// Remaining rows contain Forum info
 	// TODO insert into database
 	console.log('Forums',
-	forumTableRows.map((forumRow, index) => {
+	forumRows.map((forumRow, index) => {
 		// The cell containing the Forum's name, description, and lock status
-		const forumInfo = forumRow.querySelectorAll('td')[1];
+		const forumInfo = forumRow.querySelector('td:nth-child(2)');
 
-		const lockImg     = forumInfo.querySelector('img');
-		const forumLocked = !!lockImg?.getAttribute('src')?.includes('icon_lock');
+		const forumLocked = !!forumInfo
+			.querySelector('img')
+			?.getAttribute('src')
+			?.includes('icon_lock');
 
 		const forumLink = forumInfo.querySelector('a');
-		const forumName = forumLink.text;
+		const forumName = forumLink.textContent;
 		const forumId   = Number.parseInt(
 			FORUM_ID_REGEX.exec(forumLink.getAttribute('href'))[1]
 		);
 
-		const forumDesc = forumInfo.querySelector('div').text;
+		const forumDesc = forumInfo.querySelector('div.SMALL').textContent;
 
 		return {
 			id:          forumId,
@@ -190,22 +205,23 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
  * extract Category sort order and forum stats here.
  *
  * @param {string} filepath unused
- * @param {HTMLElement} htmlRoot
+ * @param {Document} htmlRoot
  */
 async function loadHomeFile(filepath, htmlRoot) {
-	const tables = htmlRoot.querySelectorAll('table table');
-	const forumTable = tables[1];
-	const statsTable = tables[7];
+	// Categories use a third layer of nested tables, so we need to be very
+	// specific here.
+	const tables = htmlRoot.querySelectorAll('body > table > tbody > tr > td > table');
+	const forumTable = tables.item(1);
+	const statsTable = tables.item(2);
 
-	// Gives us Categories but not Forums
-	const categoryRows = forumTable.querySelectorAll('table tr');
-	// TODO update existing category rows
-	console.log('Category Sort',
-	categoryRows.map((row, index) => ({
-		sort_index: index,
-		name: row.querySelector('b').text,
-	}))
-	);
+	// We already have Categories from each Category page.
+	// We just need the Category's sort order now.
+	const categories = Array
+		.from(forumTable.querySelectorAll('table'))
+		.map((table, index) => ({
+			sort_index: index,
+			name: table.textContent.trim().split('\n')[0],
+		}));
 
 	const STATS_REGEX = new RegExp([
 		/(\d+) users have contributed to /,
@@ -213,11 +229,14 @@ async function loadHomeFile(filepath, htmlRoot) {
 		/.*/,
 		/Most registered users online was (\d+) on ([\w:, ]+)/,
 	].map(part => part.source).join(''), 'gs');
-	const match = STATS_REGEX.exec(statsTable.rawText);
+	const match = STATS_REGEX.exec(statsTable.textContent);
 
 	const renderTimeStr = extractRenderTime(htmlRoot);
-	const renderTime = stringToDate(renderTimeStr);
-	const mostUsersAt = stringToDate(match.at(5), renderTimeStr);
+	const renderTime   = stringToDate(renderTimeStr);
+	const mostUsersAt  = stringToDate(match.at(5), renderTimeStr);
+
+	// TODO update existing category rows
+	console.log('Category Sort', categories);
 
 	// TODO stick this in the database
 	console.log('Stats',
@@ -239,7 +258,7 @@ async function loadHomeFile(filepath, htmlRoot) {
  * they could have a quote that only renders on their posts.
  *
  * @param {string} filepath
- * @param {HTMLElement} htmlRoot
+ * @param {Document} htmlRoot
  */
 async function loadUserFile(filepath, htmlRoot) {
 	const userId = Number.parseInt(
@@ -248,47 +267,19 @@ async function loadUserFile(filepath, htmlRoot) {
 
 	// TODO catch if we've already added this user (check by ID in database)
 
-	// User pages do not play nice with query selectors for some reason.
-	// Thankfully, the page structure is pretty consistent, so we can isolate
-	// profile info with this awful hard-coded nonsense instead.
-	let userInfoNodes = htmlRoot.childNodes[1].childNodes.slice(21, 70);
-
-	// Strip the blank nodes out of this list. Empty user info fields still
-	// have HTML tags in them, so we use .toString() instead of .text
-	// to remove the truly blank ones.
-	userInfoNodes = userInfoNodes.filter(
-		node => node.toString().trim().length > 0
+	const userTableRows = htmlRoot
+		.querySelectorAll('table table')
+		.item(2)
+		.querySelectorAll('tr');
+	const userNameRow  = userTableRows.item(0);
+	const userInfoRows = Array.from(
+		userTableRows.item(2).querySelector('td').querySelectorAll('tr')
 	);
 
-	// Catch blank user pages (like ID = 0)
-	if (userInfoNodes.length === 0) {
-		console.log('Skipping blank user page', userId);
-		return;
-	}
-
-	// Name node need special handling, so pop those off
-	const nameNode = userInfoNodes.shift();
-	userInfoNodes.shift(); // Ignore "Contact" label node
-
-	// Avatar node needs special handling too, but isn't present if user has no avatar
-	let avatarNode;
-	if (userInfoNodes.at(-2).toString().includes('Avatar')) {
-		avatarNode = userInfoNodes.pop();
-		userInfoNodes.pop(); // Ignore "Avatar" label node
-	}
+	const userName = userNameRow.textContent.trim().split(': ')[1];
 
 	// From this point on, empty strings indicate the value wasn't actually
 	// provided on the page, so treat those as null.
-
-	// What remains now is an alternating list of keys and values.
-	const userFields = {};
-	for (let i = 0; i < userInfoNodes.length; i += 2) {
-		const fieldName = userInfoNodes[i].text.split(':')[0];
-		userFields[fieldName] = userInfoNodes[i + 1]?.text || null;
-	}
-
-	const renderTime = extractRenderTime(htmlRoot);
-	const userName = nameNode.text.split(': ')[1].trim();
 
 	// The avatar node contains both the user's image and quote.
 	// If the user does not have an avatar, this node is not present at all,
@@ -298,12 +289,26 @@ async function loadUserFile(filepath, htmlRoot) {
 	// so we can use our own solution to statically serve these files later.
 	let userAvatar = null;
 	let userQuote  = null;
-	if (avatarNode) {
-		userAvatar = avatarNode.childNodes[0]
+	if (userInfoRows.at(-1).textContent.startsWith('Avatar')) {
+		const avatarRow = userInfoRows.pop();
+
+		userAvatar = avatarRow.querySelector('img')
 			?.getAttribute('src')
-			?.replace('avatars/', '');
-		userQuote = avatarNode.text.trim() || null;
+			?.replace('avatars/', '')
+
+		userQuote  = avatarRow.querySelector('td:nth-child(2)')
+			.textContent.trim() || null;
 	}
+
+	const userFields = userInfoRows.reduce((fields, row) => {
+		const cells = row.querySelectorAll('td');
+		const fieldName  = cells.item(0).textContent.split(':')[0];
+		const fieldValue = cells.item(1).textContent;
+		fields[fieldName] = fieldValue || null;
+		return fields;
+	}, {});
+
+	const renderTime = extractRenderTime(htmlRoot);
 
 	// TODO put this in the database
 	console.log('User',
@@ -334,22 +339,21 @@ async function loadUserFile(filepath, htmlRoot) {
  * We derive created_at from the first post in {@link loadTopicFile}.
  *
  * @param {string} filepath
- * @param {HTMLElement} htmlRoot
+ * @param {Document} htmlRoot
  */
 async function loadForumFile(filepath, htmlRoot) {
 	const forumId = Number.parseInt(FORUM_FILE_REGEX.exec(filepath)[1]);
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
-	const topicTableRows = htmlRoot
-		.querySelectorAll('table table')[2]  // Topic table
-		?.querySelectorAll('tr');            // Topic rows within table
+	const topicTable = htmlRoot.querySelector('table table:nth-child(2)');
 
 	// There's at least one invalid Forum page in the mirror (ID = 19).
-	if (!topicTableRows) {
-		console.log('Ignoring empty forum', forumId);
+	if (!topicTable) {
+		console.log('Skipping stub forum', forumId);
 		return;
 	}
 
+	const topicTableRows = Array.from(topicTable.querySelectorAll('tr'));
 	topicTableRows.shift(); // Ignore header row
 	topicTableRows.shift(); // Ignore moderator row
 
@@ -379,40 +383,40 @@ async function loadForumFile(filepath, htmlRoot) {
  * Extracts Topic info from a row of the Topic table on a Forum page.
  * Returns a partial Topic record, as well as the Topic author's name.
  *
- * @param {HTMLTableRowElement} htmlRow
+ * @param {HTMLTableRowElement} topicRow
  */
-function extractTopicInfoFromRow(htmlRow) {
+function extractTopicInfoFromRow(topicRow) {
 	// Every Topic row has an icon. If the Topic is locked, this icon is
 	// different. Pinned Topics also have a little paper clip icon.
-	const [iconImage, pinImage] = htmlRow.querySelectorAll('img');
-	const topicLocked = iconImage.getAttribute('src').includes('locked');
-	const topicPinned = !!pinImage?.getAttribute('src').includes('clip');
+	const images = topicRow.querySelectorAll('img');
+	const topicLocked = images.item(0).getAttribute('src').includes('locked');
+	const topicPinned = !!images.item(1)?.getAttribute('src').includes('clip');
 
 	// The first link in a row USUALLY contains both the Topic ID and name.
 	// In the rare case a Topic was moved, the first link will be the link to
 	// the Forum it was moved from, and the second has the ID and name.
-	const rowLinks = htmlRow.querySelectorAll('a');
-	let topicLinkNode;
+	const rowLinks = topicRow.querySelectorAll('a');
+	let topicLinkElem;
 	let topicMovedFrom;
-	if (FORUM_FILE_REGEX.test(rowLinks[0].getAttribute('href'))) {
-		topicLinkNode  = rowLinks[1];
+	if (FORUM_FILE_REGEX.test(rowLinks.item(0).getAttribute('href'))) {
+		topicLinkElem  = rowLinks.item(1);
 		topicMovedFrom = Number.parseInt(
-			FORUM_FILE_REGEX.exec(rowLinks[0].getAttribute('href'))[1]
+			FORUM_FILE_REGEX.exec(rowLinks.item(0).getAttribute('href'))[1]
 		);
 	} else {
-		topicLinkNode  = rowLinks[0];
+		topicLinkElem  = rowLinks.item(0);
 		topicMovedFrom = null;
 	}
 
-	const topicName = topicLinkNode.text;
+	const topicName = topicLinkElem.textContent;
 	const topicId   = Number.parseInt(
-		TOPIC_FILE_REGEX.exec(topicLinkNode.getAttribute('href'))[1]
+		TOPIC_FILE_REGEX.exec(topicLinkElem.getAttribute('href'))[1]
 	);
 
 	// span elements contain author name, total posts, and total views.
-	const spans = htmlRow.querySelectorAll('span');
-	const authorName = spans[0].text;
-	const topicViews = Number.parseInt(spans[2].text);
+	const topicRowCells = topicRow.querySelectorAll('td');
+	const authorName = topicRowCells.item(2).textContent;
+	const topicViews = Number.parseInt(topicRowCells.item(4).textContent);
 
 	return {
 		id:         topicId,
@@ -434,20 +438,25 @@ function extractTopicInfoFromRow(htmlRow) {
  * User special strings are also rendered in Topics.
  *
  * @param {string} filepath
- * @param {HTMLElement} htmlRoot
+ * @param {Document} htmlRoot
  */
 async function loadTopicFile(filepath, htmlRoot) {
 	const topicMatch = TOPIC_FILE_REGEX.exec(filepath);
 	const topicId     = Number.parseInt(topicMatch[1]);
-	const isFirstPage = !topicMatch[2];
+	const isFirstPage = !topicMatch[2] || topicMatch[2] === '1';
 
 	const renderTimeStr = extractRenderTime(htmlRoot);
 	const renderTime    = stringToDate(renderTimeStr);
 
-	let postRows = htmlRoot
-		.querySelectorAll('table table')[2] // Post table
-		.querySelectorAll('tr');            // Post rows
+	const postTable = Array.from(htmlRoot.querySelectorAll('table table'))
+		.find(table => table.querySelector('#messagearea'));
 
+	if (!postTable) {
+		console.log('Skipping stub Topic', topicId);
+		return;
+	}
+
+	const postRows = Array.from(postTable.querySelectorAll('tr'));
 	postRows.shift(); // Ignore topic title row
 	postRows.shift(); // Ignore moderator row
 	postRows.pop();   // Ignore empty end row
@@ -499,11 +508,8 @@ async function loadTopicFile(filepath, htmlRoot) {
  * @param {HTMLTableRowElement} idRow
  */
 function extractPostInfoFromRows(postRow, idRow) {
-
 	// Post rows have two cells -- the user info, and the post content.
-	const cellNodes = postRow.querySelectorAll('td');
-	const userNode = cellNodes[0];
-	const postNode = cellNodes[1];
+	const userNode = postRow.querySelector('td');
 
 	// First link contains link to author's User page, and thus, User's ID.
 	const authorId = Number.parseInt(USER_FILE_REGEX.exec(
@@ -511,20 +517,20 @@ function extractPostInfoFromRows(postRow, idRow) {
 	)[1]);
 
 	// Avatar quote has a unique class "avatar" we can select on.
-	const userQuote = userNode.querySelector('span.avatar')?.text;
+	const userQuote = userNode.querySelector('span.avatar')?.textContent || null;
 
 	// User special info can be an image (Dennis' moderator badge) or a text
 	// node (Maniac's "helpful user" label). There's not a great way to
 	// select this, so just grab whatever comes after the User link that isn't
 	// the User join date (if anything).
-	const specialTextNode = userNode.childNodes[6];
-	const specialImgNode  = userNode.childNodes[7];
+	const specialTextNode = userNode.childNodes.item(6);
+	const specialImgNode  = userNode.childNodes.item(7);
 
 	// Yes, this is kind of dumb, but it'll help catch other specials.
 	let userSpecial = null;
-	if (specialTextNode.text.trim().length > 0) {
-		userSpecial = specialTextNode.text.trim();
-	} else if (specialImgNode && specialImgNode.rawTagName === 'img') {
+	if (specialTextNode.textContent.trim().length > 0) {
+		userSpecial = specialTextNode.textContent.trim();
+	} else if (specialImgNode && specialImgNode.nodeName === 'IMG') {
 		if (specialImgNode.getAttribute('src').includes('moderator')) {
 			userSpecial = 'moderator';
 		} else {
@@ -536,13 +542,13 @@ function extractPostInfoFromRows(postRow, idRow) {
 
 	// Post time always appears first as a "strong" tag.
 	const postCreatedStr = POST_TIME_REGEX.exec(
-		postRow.querySelector('strong').text
+		postRow.querySelector('strong').textContent
 	)[1];
 
 	// Post content is easy. It appears in a div with a unique ID.
 	// Posts are formatted using embedded HTML. Users could edit this HTML
-	// directly when editing their post, so there's not really any good way
-	// to sanitize this without losing information.
+	// directly when editing their post. There's not really any good way
+	// to sanitize this without losing information, so just keep it.
 	const postContent = postRow.querySelector('div#messagearea').innerHTML;
 
 	// The button for replying to a post contains a link with the Post's ID.
@@ -574,25 +580,15 @@ function extractPostInfoFromRows(postRow, idRow) {
  * as a string to have an easier time resolving dates like "Today @ <time>".
  * Use {@link stringToDate} to get a {@link Date} object.
  *
- * @param {HTMLElement} htmlRoot
+ * @param {Document} htmlRoot
  */
 function extractRenderTime(htmlRoot) {
 	const tables = htmlRoot.querySelectorAll('table');
-	tables.pop(); // Last table is "Halomaps" footer
-	const timeTable = tables.pop(); // Second-to-last contains the render time.
+	const timeTable = tables.item(tables.length - 2);
 
-	const match = RENDER_TIME_REGEX.exec(timeTable?.text);
+	const match = RENDER_TIME_REGEX.exec(timeTable.textContent);
 	if (match) {
 		return match[1];
-	}
-
-	// The above doesn't work with a select few pages, so we need a fallback.
-	// (e.g. kirby_422's user page [id 728]).
-
-	const endOfPageSnippet = htmlRoot.textContent.slice(-1000);
-	const fallbackMatch = RENDER_TIME_REGEX.exec(endOfPageSnippet);
-	if (fallbackMatch) {
-		return fallbackMatch[1];
 	}
 
 	throw new Error('Failed to extract mirror time');

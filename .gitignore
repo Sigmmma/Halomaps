@@ -3,4 +3,4 @@ node_modules
 server/samples
 todo
 forum.halomaps.org
-stats.txt
+*.txt
