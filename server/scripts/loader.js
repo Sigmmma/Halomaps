@@ -3,6 +3,8 @@ const { join, basename } = require('path');
 const { JSDOM } = require('jsdom');
 const { DateTime } = require('luxon');
 
+const database = require('../database/mirror_insert');
+
 // Need insensitive search since filenames in mirror mix cases.
 const HOME_FILE_REGEX    = /index.cfm(?:\?|%3F)page=home$/i;
 const HOMECAT_FILE_REGEX = /index.cfm(?:\?|%3F)page=home&categoryid=(\d+)/i;
@@ -118,7 +120,7 @@ async function loadFile(filepath, pair) {
 	}
 
 	const fileProcessor = pair[1];
-	fileProcessor(filepath, document);
+	await fileProcessor(filepath, document);
 }
 
 // The following is a series of jank CSS query selectors to scrape data from
@@ -145,7 +147,6 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
 	// Second table contains Category / Forum info
-	//const forumTable = htmlRoot.querySelector('table table:nth-child(2)');
 	const forumRows = Array.from(htmlRoot
 		.querySelector('table table:nth-child(2)')
 		.querySelectorAll('tr')
@@ -156,19 +157,14 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 
 	const categoryName = categoryRow.querySelector('b').textContent;
 
-	// TODO insert into database
-	console.log('Category',
-	{
+	await database.addCategory({
 		id:          categoryId,
 		name:        categoryName,
+		sort_index:  0, // loadHomeFile fills this in later
 		mirrored_at: renderTime,
-	}
-	);
+	});
 
-	// Remaining rows contain Forum info
-	// TODO insert into database
-	console.log('Forums',
-	forumRows.map((forumRow, index) => {
+	await database.addForums(forumRows.map((forumRow, index) => {
 		// The cell containing the Forum's name, description, and lock status
 		const forumInfo = forumRow.querySelector('td:nth-child(2)');
 
@@ -194,8 +190,7 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 			category_id: categoryId,
 			mirrored_at: renderTime,
 		};
-	})
-	);
+	}));
 }
 
 /**
@@ -220,7 +215,7 @@ async function loadHomeFile(filepath, htmlRoot) {
 		.from(forumTable.querySelectorAll('table'))
 		.map((table, index) => ({
 			sort_index: index,
-			name: table.textContent.trim().split('\n')[0],
+			name:       table.textContent.trim().split('\n')[0],
 		}));
 
 	const STATS_REGEX = new RegExp([
@@ -235,19 +230,14 @@ async function loadHomeFile(filepath, htmlRoot) {
 	const renderTime   = stringToDate(renderTimeStr);
 	const mostUsersAt  = stringToDate(match.at(5), renderTimeStr);
 
-	// TODO update existing category rows
-	console.log('Category Sort', categories);
-
-	// TODO stick this in the database
-	console.log('Stats',
-	[
+	await database.updateCategorySorts(categories);
+	await database.addStats([
 		{ name: 'users',          value: match.at(1) },
 		{ name: 'topics',         value: match.at(2) },
 		{ name: 'posts',          value: match.at(3) },
 		{ name: 'most_users_num', value: match.at(4) },
 		{ name: 'most_users_at',  value: mostUsersAt },
-	].map(row => ({ ...row, mirrored_at: renderTime }) )
-	);
+	].map(row => ({ ...row, mirrored_at: renderTime }) ));
 }
 
 /**
@@ -310,9 +300,7 @@ async function loadUserFile(filepath, htmlRoot) {
 
 	const renderTime = extractRenderTime(htmlRoot);
 
-	// TODO put this in the database
-	console.log('User',
-	{
+	await database.addUser({
 		id:            userId,
 		name:          userName,
 		joined_at:     stringToDate(userFields['Joined'], renderTime),
@@ -326,8 +314,7 @@ async function loadUserFile(filepath, htmlRoot) {
 		age:           userFields['Your Age'],
 		games_played:  userFields['What Games do you play'],
 		mirrored_at:   stringToDate(renderTime),
-	}
-	);
+	});
 }
 
 /**
@@ -363,20 +350,18 @@ async function loadForumFile(filepath, htmlRoot) {
 
 		const authorName = topicData.authorName;
 		delete topicData.authorName;
-
-		// TODO lookup author by name in database
+		const authorId   = await database.getUserIdByName(authorName);
 
 		topics.push({
 			...topicData,
 			forum_id:    forumId,
-			author_id:   undefined,
-			created_at:  undefined,  // We'll get this later from Posts.
+			author_id:   authorId,
+			created_at:  0, // We'll get this later from Posts.
 			mirrored_at: renderTime,
 		})
 	}
 
-	// TODO put these in the database
-	console.log('Topics', topics)
+	await database.addTopics(topics);
 }
 
 /**
@@ -490,14 +475,13 @@ async function loadTopicFile(filepath, htmlRoot) {
 		});
 	}
 
-	// TODO put these in database
-	console.log('Topic', {
+	await database.updateTopicCreationTime({
 		id:         topicId,
 		created_at: topicCreationTime,
-	})
-	console.log('Posts', posts);
+	});
 	// TODO only update user if the respective field is null
-	console.log('User updates', users);
+	await database.updateUsers(users);
+	await database.addPosts(posts);
 }
 
 /**
