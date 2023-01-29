@@ -48,4 +48,5 @@ if (argv.version) {
 	for await (const file of argv.files) {
 		await loader.load(file);
 	}
+	process.exit();
 })();
