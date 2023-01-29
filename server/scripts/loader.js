@@ -454,7 +454,7 @@ async function loadTopicFile(filepath, htmlRoot) {
 	// and quote, we'll grab those too.
 	const posts = [];
 	const users = [];
-	let topicCreationTime;
+	let topicCreationTimeUpdate;
 	for (let i = 0; i < postRows.length; i += 2) {
 		const data = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
 
@@ -464,7 +464,7 @@ async function loadTopicFile(filepath, htmlRoot) {
 
 		// Derive Topic created_at timestamp from first Post of first page.
 		if (isFirstPage && i === 0) {
-			topicCreationTime = data.post.created_at;
+			topicCreationTimeUpdate = data.post.created_at;
 		}
 
 		users.push(data.user);
@@ -475,10 +475,12 @@ async function loadTopicFile(filepath, htmlRoot) {
 		});
 	}
 
-	await database.updateTopicCreationTime({
-		id:         topicId,
-		created_at: topicCreationTime,
-	});
+	if (topicCreationTimeUpdate) {
+		await database.updateTopicCreationTime({
+			id:         topicId,
+			created_at: topicCreationTimeUpdate,
+		});
+	}
 	// TODO only update user if the respective field is null
 	await database.updateUsers(users);
 	await database.addPosts(posts);
