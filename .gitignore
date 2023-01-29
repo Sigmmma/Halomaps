@@ -1,5 +1,5 @@
 node_modules
-*.sqlite
+*.sqlite*
 server/samples
 todo
 forum.halomaps.org
