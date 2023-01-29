@@ -1,6 +1,7 @@
 const CATEGORIES = 'categories';
 const FORUMS     = 'forums';
 const POSTS      = 'posts';
+const STATS      = 'stats';
 const TOPICS     = 'topics';
 const USERS      = 'users';
 
@@ -28,7 +29,6 @@ exports.up = async function(knex) {
 			'References a statically served avatar image name.'
 		);
 		table.string   ('quote'        );
-		table.string   ('website'      );
 		table.string   ('location'     );
 		table.string   ('occupation'   );
 		table.string   ('interests'    );
@@ -36,11 +36,15 @@ exports.up = async function(knex) {
 		table.string   ('games_played' );
 		table.timestamp('mirrored_at'  ).notNullable();
 
+		// Omitted fields:
+		// - email
+		// - website
+		//
 		// No email. There was a user option to display emails, but it was no
 		// longer being displayed at the time the site was mirrored, and thus
-		// is effectively blank for everybody.
+		// is effectively blank for everybody. Same for website.
 		// If you really need a user's email, you may be able to search that
-		// user's post text content for an email. (hint: use a regex)
+		// user's post text content for an email. (hint: use a regex).
 	});
 
 	await knex.schema.createTable(CATEGORIES, table => {
@@ -52,17 +56,35 @@ exports.up = async function(knex) {
 
 	await knex.schema.createTable(FORUMS, table => {
 		table.integer  ('id'         ).primary();
+		table.integer  ('sort_index' ).notNullable();
 		table.string   ('name'       ).notNullable();
+		table.boolean  ('locked'     ).defaultTo(false);
 		table.string   ('description').notNullable();
 		table.integer  ('category_id').notNullable().references('id').inTable(CATEGORIES);
 		table.timestamp('mirrored_at').notNullable();
 	});
 
+	await knex.schema.createTable(STATS, table => {
+		table.string   ('name'       ).primary();
+		table.string   ('value'      ).notNullable();
+		table.timestamp('mirrored_at').notNullable();
+		table.comment(
+			'These values are extracted from the stats rendered out on the ' +
+			'forum home page. They ARE NOT derived from posts and users we ' +
+			'scrape from the mirror, so they could be used to verify the ' +
+			'completeness of the mirror and data extraction.'
+		)
+	});
+
 	await knex.schema.createTable(TOPICS, table => {
 		table.integer  ('id'         ).primary();
 		table.string   ('name'       ).notNullable();
+		table.integer  ('views'      ).notNullable();
+		table.boolean  ('pinned'     ).defaultTo(false);
+		table.boolean  ('locked'     ).defaultTo(false);
 		table.integer  ('forum_id'   ).notNullable().references('id').inTable(FORUMS);
 		table.integer  ('author_id'  ).notNullable().references('id').inTable(USERS);
+		table.integer  ('moved_from' ).references('id').inTable(FORUMS);
 		table.timestamp('created_at' ).notNullable();
 		table.timestamp('mirrored_at').notNullable();
 	});
@@ -72,7 +94,7 @@ exports.up = async function(knex) {
 		table.integer  ('author_id'  ).notNullable().references('id').inTable(USERS);
 		table.integer  ('topic_id'   ).notNullable().references('id').inTable(TOPICS);
 		table.timestamp('created_at' ).notNullable();
-		table.string   ('content'    ).notNullable().comment(
+		table.text     ('content'    ).notNullable().comment(
 			'Contains HTML tags adjusted to work with statically served CSS.'
 		);
 		table.timestamp('mirrored_at').notNullable();
@@ -86,6 +108,7 @@ exports.up = async function(knex) {
 exports.down = async function(knex) {
 	await knex.schema.dropTable(POSTS);
 	await knex.schema.dropTable(TOPICS);
+	await knex.schema.dropTable(STATS);
 	await knex.schema.dropTable(FORUMS);
 	await knex.schema.dropTable(CATEGORIES);
 	await knex.schema.dropTable(USERS);
