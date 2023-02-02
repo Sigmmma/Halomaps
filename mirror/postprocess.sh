@@ -11,6 +11,7 @@ find $MIRROR_DIR -type f -wholename '*index.*' \
 		echo "$file"
 		# ? escapes to %3F
 		sed --in-place 's/index.cfm?page/index.cfm%3Fpage/g' "$file"
+		sed --in-place 's/style.cfm?/style.cfm%3F/g' "$file"
 	done
 
 

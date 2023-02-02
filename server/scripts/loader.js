@@ -6,11 +6,11 @@ const { DateTime } = require('luxon');
 const database = require('../database/mirror_insert');
 
 // Need insensitive search since filenames in mirror mix cases.
-const HOME_FILE_REGEX    = /index.cfm(?:\?|%3F)page=home$/i;
-const HOMECAT_FILE_REGEX = /index.cfm(?:\?|%3F)page=home&categoryid=(\d+)/i;
-const USER_FILE_REGEX    = /index.cfm(?:\?|%3F)page=userinfo&viewuserid=(\d+)/i;
-const FORUM_FILE_REGEX   = /index.cfm(?:\?|%3F)page=forum&forumid=(\d+)(?:&start=(\d+))?/i;
-const TOPIC_FILE_REGEX   = /index.cfm(?:\?|%3F)page=topic&topicid=(\d+)(?:&start=(\d+))?/i;
+const HOME_FILE_REGEX    = /index.cfm(?:\?|%3F|_)page=home$/i;
+const HOMECAT_FILE_REGEX = /index.cfm(?:\?|%3F|_)page=home&categoryid=(\d+)/i;
+const USER_FILE_REGEX    = /index.cfm(?:\?|%3F|_)page=userinfo&viewuserid=(\d+)/i;
+const FORUM_FILE_REGEX   = /index.cfm(?:\?|%3F|_)page=forum&forumid=(\d+)(?:&start=(\d+))?/i;
+const TOPIC_FILE_REGEX   = /index.cfm(?:\?|%3F|_)page=topic&topicid=(\d+)(?:&start=(\d+))?/i;
 
 /** Allows us to apply and load mirror files in a specific order. */
 const FILE_PROCESSORS = [
