@@ -8,13 +8,16 @@ const { version } = require('../package.json');
 const argv = minimist(process.argv.slice(2), {
 	alias: {
 		help: 'h',
+		json: 'j',
 	},
 	boolean: [
 		'help',
+		'json',
 		'version',
 	],
 	default: {
 		help: false,
+		json: false,
 		version: false,
 	},
 });
@@ -24,6 +27,7 @@ const USAGE = [
 	`Usage: ${basename(__filename)} [OPTIONS] <directory|file(s)>`,
 	'',
 	'Options:',
+	'\t -j --json   Prints rows as JSON instead of inserting into database.',
 	'\t -h --help   Prints this help text and exits.',
 	'\t --version   Prints the server (and this script) version and exits.',
 	'',
@@ -46,7 +50,9 @@ if (argv.version) {
 
 (async function () {
 	for await (const file of argv.files) {
-		await loader.load(file);
+		await loader.load(file, {
+			print_json: argv.json,
+		});
 	}
 	process.exit();
 })();

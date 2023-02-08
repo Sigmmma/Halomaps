@@ -41,13 +41,19 @@ const POST_TIME_REGEX = /Posted: ([\w,:@ ]+)/;
  * directory containing many files.
  *
  * @param {string} value path to a file or a directory.
+ * @param {Object<string, any>} opts Optional loader options. Defaults:
+ * ```
+ * {
+ *   print_json: false, // Output JSON instead of inserting into the database
+ * }
+ * ```
  */
-async function load(value) {
+async function load(value, opts) {
 	const valueStats = await stat(value);
 	if (valueStats.isFile()) {
-		await loadFile(value);
+		await loadFile(value, undefined, opts);
 	} else if (valueStats.isDirectory()) {
-		await loadDirectory(value);
+		await loadDirectory(value, opts);
 	} else {
 		throw new Error(`Not a file or directory: ${value}`);
 	}
@@ -63,8 +69,9 @@ async function load(value) {
  * {@link FILE_PROCESSORS} array.
  *
  * @param {string} directory
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadDirectory(directory) {
+async function loadDirectory(directory, opts) {
 	const dirents = await readdir(directory, { withFileTypes: true });
 
 	const filenameSet = dirents.reduce((fileset, dirent) => {
@@ -81,7 +88,7 @@ async function loadDirectory(directory) {
 
 		for await (const file of matchingFiles) {
 			filenameSet.delete(file);
-			await loadFile(join(directory, file), pair);
+			await loadFile(join(directory, file), pair, opts);
 		}
 	}
 
@@ -94,8 +101,9 @@ async function loadDirectory(directory) {
  *
  * @param {string} filepath
  * @param {[RegExp, (string) => Promise<void>]?} pair
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadFile(filepath, pair) {
+async function loadFile(filepath, pair, opts) {
 	// If coming from loadDirectory, this work has already been done for us.
 	if (!pair) {
 		pair = FILE_PROCESSORS.find(([regex]) => regex.test(filepath));
@@ -120,7 +128,7 @@ async function loadFile(filepath, pair) {
 	}
 
 	const fileProcessor = pair[1];
-	await fileProcessor(filepath, document);
+	await fileProcessor(filepath, document, opts);
 }
 
 // The following is a series of jank CSS query selectors to scrape data from
@@ -139,8 +147,9 @@ async function loadFile(filepath, pair) {
  *
  * @param {string} filepath
  * @param {Document} htmlRoot
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadHomeCategoryFile(filepath, htmlRoot) {
+async function loadHomeCategoryFile(filepath, htmlRoot, opts) {
 	const categoryId = Number.parseInt(
 		HOMECAT_FILE_REGEX.exec(basename(filepath))[1]
 	);
@@ -157,14 +166,14 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 
 	const categoryName = categoryRow.querySelector('b').textContent;
 
-	await database.addCategory({
+	const categoryData = {
 		id:          categoryId,
 		name:        categoryName,
 		sort_index:  0, // loadHomeFile fills this in later
 		mirrored_at: renderTime,
-	});
+	};
 
-	await database.addForums(forumRows.map((forumRow, index) => {
+	const forumsData = forumRows.map((forumRow, index) => {
 		// The cell containing the Forum's name, description, and lock status
 		const forumInfo = forumRow.querySelector('td:nth-child(2)');
 
@@ -190,7 +199,15 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
 			category_id: categoryId,
 			mirrored_at: renderTime,
 		};
-	}));
+	});
+
+	if (opts.print_json) {
+		console.log('Category', categoryData);
+		console.log('Forums', forumsData);
+	} else {
+		await database.addCategory(categoryData);
+		await database.addForums(forumsData);
+	}
 }
 
 /**
@@ -201,8 +218,9 @@ async function loadHomeCategoryFile(filepath, htmlRoot) {
  *
  * @param {string} filepath unused
  * @param {Document} htmlRoot
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadHomeFile(filepath, htmlRoot) {
+async function loadHomeFile(filepath, htmlRoot, opts) {
 	// Categories use a third layer of nested tables, so we need to be very
 	// specific here.
 	const tables = htmlRoot.querySelectorAll('body > table > tbody > tr > td > table');
@@ -230,14 +248,21 @@ async function loadHomeFile(filepath, htmlRoot) {
 	const renderTime   = stringToDate(renderTimeStr);
 	const mostUsersAt  = stringToDate(match.at(5), renderTimeStr);
 
-	await database.updateCategorySorts(categories);
-	await database.addStats([
+	const statsData = [
 		{ name: 'users',          value: match.at(1) },
 		{ name: 'topics',         value: match.at(2) },
 		{ name: 'posts',          value: match.at(3) },
 		{ name: 'most_users_num', value: match.at(4) },
 		{ name: 'most_users_at',  value: mostUsersAt },
-	].map(row => ({ ...row, mirrored_at: renderTime }) ));
+	].map(row => ({ ...row, mirrored_at: renderTime }) );
+
+	if (opts.print_json) {
+		console.log('Category Sort Update', categories);
+		console.log('Stats', statsData);
+	} else {
+		await database.updateCategorySorts(categories);
+		await database.addStats(statsData);
+	}
 }
 
 /**
@@ -249,8 +274,9 @@ async function loadHomeFile(filepath, htmlRoot) {
  *
  * @param {string} filepath
  * @param {Document} htmlRoot
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadUserFile(filepath, htmlRoot) {
+async function loadUserFile(filepath, htmlRoot, opts) {
 	const userId = Number.parseInt(
 		USER_FILE_REGEX.exec(basename(filepath))[1]
 	);
@@ -300,7 +326,7 @@ async function loadUserFile(filepath, htmlRoot) {
 
 	const renderTime = extractRenderTime(htmlRoot);
 
-	await database.addUser({
+	const userData = {
 		id:            userId,
 		name:          userName,
 		joined_at:     stringToDate(userFields['Joined'], renderTime),
@@ -314,7 +340,13 @@ async function loadUserFile(filepath, htmlRoot) {
 		age:           userFields['Your Age'],
 		games_played:  userFields['What Games do you play'],
 		mirrored_at:   stringToDate(renderTime),
-	});
+	};
+
+	if (opts.print_json) {
+		console.log('User', userData);
+	} else {
+		await database.addUser(userData);
+	}
 }
 
 /**
@@ -327,8 +359,9 @@ async function loadUserFile(filepath, htmlRoot) {
  *
  * @param {string} filepath
  * @param {Document} htmlRoot
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadForumFile(filepath, htmlRoot) {
+async function loadForumFile(filepath, htmlRoot, opts) {
 	const forumId = Number.parseInt(FORUM_FILE_REGEX.exec(filepath)[1]);
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
@@ -361,7 +394,11 @@ async function loadForumFile(filepath, htmlRoot) {
 		})
 	}
 
-	await database.addTopics(topics);
+	if (opts.print_json) {
+		console.log('Topics', topics);
+	} else {
+		await database.addTopics(topics);
+	}
 }
 
 /**
@@ -415,7 +452,9 @@ function extractTopicInfoFromRow(topicRow) {
 }
 
 /**
- * Handles: index.cfm?page=topic&topicID=x
+ * Handles:
+ *   - index.cfm?page=topic&topicID=x
+ *   - index.cfm?page=topic&topicID=x&start=y
  *
  * All posts for a Topic come from these pages.
  * The Topic's created_at time is derived from the first post in the Topic.
@@ -424,8 +463,9 @@ function extractTopicInfoFromRow(topicRow) {
  *
  * @param {string} filepath
  * @param {Document} htmlRoot
+ * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadTopicFile(filepath, htmlRoot) {
+async function loadTopicFile(filepath, htmlRoot, opts) {
 	const topicMatch = TOPIC_FILE_REGEX.exec(filepath);
 	const topicId     = Number.parseInt(topicMatch[1]);
 	const isFirstPage = !topicMatch[2] || topicMatch[2] === '1';
@@ -475,15 +515,23 @@ async function loadTopicFile(filepath, htmlRoot) {
 		});
 	}
 
-	if (topicCreationTimeUpdate) {
-		await database.updateTopicCreationTime({
-			id:         topicId,
-			created_at: topicCreationTimeUpdate,
-		});
+	const topicUpdateData = {
+		id:         topicId,
+		created_at: topicCreationTimeUpdate,
+	};
+
+	if (opts.print_json) {
+		console.log('Topic creation time update', topicUpdateData);
+		console.log('User updates', users);
+		console.log('Posts', posts);
+	} else {
+		if (topicCreationTimeUpdate) {
+			await database.updateTopicCreationTime(topicUpdateData);
+		}
+		// TODO only update user if the respective field is null
+		await database.updateUsers(users);
+		await database.addPosts(posts);
 	}
-	// TODO only update user if the respective field is null
-	await database.updateUsers(users);
-	await database.addPosts(posts);
 }
 
 /**
