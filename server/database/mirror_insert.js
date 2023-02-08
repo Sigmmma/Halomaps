@@ -58,7 +58,11 @@ async function addUser(user) {
 }
 
 async function getUserIdByName(name) {
-	return knex(USERS).select('id').where('name', name);
+	const row = await knex(USERS).first('id').where('name', name);
+	if (!row) {
+		throw new Error(`No user found with name: ${name}`);
+	}
+	return row.id;
 }
 
 async function updateUsers(userUpdates) {
