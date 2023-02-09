@@ -383,23 +383,23 @@ async function loadForumFile(filepath, htmlRoot, opts) {
 
 		const authorName = topicData.authorName;
 		delete topicData.authorName;
-		let authorId     = await database.getUserIdByName(authorName);
+		const authorId   = await database.getUserIdByName(authorName);
 
 		// Topics listed on a Forum page have a "Started By" field. This field
 		// reflects the name of the Topic's author at the time the Topic was
-		// created. If the User who created the Topic was renamed later, this
-		// lookup will fail.
+		// created. If the User who created the Topic was deleted or renamed,
+		// this lookup will fail.
 		// We'll infer author from the first Post in the Topic later.
 		if (!authorId) {
 			console.warn(`No user found with name: ${authorName}`);
-			authorId = database.PLACEHOLDER_ID;
 		}
 
 		topics.push({
 			...topicData,
 			forum_id:    forumId,
 			author_id:   authorId,
-			created_at:  database.PLACEHOLDER_ID, // We'll get this later from Posts.
+			author_name: authorName,
+			created_at:  null, // We'll get this later from Posts.
 			mirrored_at: renderTime,
 		});
 	}
@@ -538,7 +538,7 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 		console.log('User updates', users);
 		console.log('Posts', posts);
 	} else {
-		await database.patchTopicPlaceholders(topicUpdateData);
+		await database.patchTopicWhereNull(topicUpdateData);
 		// TODO only update user if the respective field is null
 		await database.updateUsers(users);
 		await database.addPosts(posts);

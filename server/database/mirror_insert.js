@@ -7,8 +7,6 @@ const STATS      = 'stats';
 const TOPICS     = 'topics';
 const USERS      = 'users';
 
-/** Satisfies not-null constraints we'll fill in at a later step. */
-const PLACEHOLDER_ID = 0;
 
 async function addCategory(category) {
 	return knex(CATEGORIES)
@@ -48,15 +46,13 @@ async function addTopics(topics) {
 		.onConflict().ignore();
 }
 
-async function patchTopicPlaceholders(topicPatch) {
+async function patchTopicWhereNull(topicPatch) {
 	return Promise.all(['author_id', 'created_at']
 		.filter(field => topicPatch[field])
 		.map(field => knex(TOPICS)
 			.update(field, topicPatch[field])
-			.where({
-				id:      topicPatch.id,
-				[field]: PLACEHOLDER_ID,
-			})
+			.where('id', topicPatch.id)
+			.whereNull(field)
 		));
 }
 
@@ -80,7 +76,6 @@ async function updateUsers(userUpdates) {
 }
 
 module.exports = {
-	PLACEHOLDER_ID,
 	addCategory,
 	addForums,
 	addPosts,
@@ -88,7 +83,7 @@ module.exports = {
 	addTopics,
 	addUser,
 	getUserIdByName,
-	patchTopicPlaceholders,
+	patchTopicWhereNull,
 	updateCategorySorts,
 	updateUsers,
 };

@@ -73,7 +73,7 @@ exports.up = async function(knex) {
 			'forum home page. They ARE NOT derived from posts and users we ' +
 			'scrape from the mirror, so they could be used to verify the ' +
 			'completeness of the mirror and data extraction.'
-		)
+		);
 	});
 
 	await knex.schema.createTable(TOPICS, table => {
@@ -83,9 +83,18 @@ exports.up = async function(knex) {
 		table.boolean  ('pinned'     ).defaultTo(false);
 		table.boolean  ('locked'     ).defaultTo(false);
 		table.integer  ('forum_id'   ).notNullable().references('id').inTable(FORUMS);
-		table.integer  ('author_id'  ).notNullable().references('id').inTable(USERS);
+		table.integer  ('author_id'  ).references('id').inTable(USERS).comment(
+			'Nullable because author may need to be inferred from first Post'
+		);
+		table.string   ('author_name').notNullable().comment(
+			'Topics display the name their author had when it was created. ' +
+			'This can differ from the User name in the first Post if the ' +
+			"User's name was changed."
+		);
 		table.integer  ('moved_from' ).references('id').inTable(FORUMS);
-		table.timestamp('created_at' ).notNullable();
+		table.timestamp('created_at' ).comment(
+			'Nullable because creation time must be inferred from first Post'
+		);
 		table.timestamp('mirrored_at').notNullable();
 	});
 
