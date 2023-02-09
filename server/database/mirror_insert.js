@@ -67,11 +67,15 @@ async function getUserIdByName(name) {
 	return row?.id;
 }
 
-async function updateUsers(userUpdates) {
-	return Promise.all(userUpdates.map(userUpdate =>
-		knex(USERS)
-			.where('id', userUpdate.id)
-			.update(userUpdate)
+async function updateUsersWhereNull(userPatches) {
+	return Promise.all(userPatches.map(userPatch =>
+		Promise.all(['quote', 'special']
+			.filter(field => userPatch[field])
+			.map(field => knex(USERS)
+				.update(field, userPatch[field])
+				.where('id', userPatch.id)
+			)
+		)
 	));
 }
 
@@ -85,5 +89,5 @@ module.exports = {
 	getUserIdByName,
 	patchTopicWhereNull,
 	updateCategorySorts,
-	updateUsers,
+	updateUsersWhereNull,
 };

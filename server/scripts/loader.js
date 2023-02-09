@@ -503,7 +503,7 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 	// Also, since posts are the only sure place to get a User's special text
 	// and quote, we'll grab those too.
 	const posts = [];
-	const users = [];
+	const usersUpdateData = [];
 	let firstPost;
 	for (let i = 0; i < postRows.length; i += 2) {
 		const postInfo = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
@@ -519,7 +519,7 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 			firstPost = postInfo.post;
 		}
 
-		users.push(postInfo.user);
+		usersUpdateData.push(postInfo.user);
 		posts.push({
 			...postInfo.post,
 			topic_id:    topicId,
@@ -535,12 +535,11 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 
 	if (opts.print_json) {
 		console.log('Topic creation time update', topicUpdateData);
-		console.log('User updates', users);
+		console.log('User updates', usersUpdateData);
 		console.log('Posts', posts);
 	} else {
 		await database.patchTopicWhereNull(topicUpdateData);
-		// TODO only update user if the respective field is null
-		await database.updateUsers(users);
+		await database.updateUsersWhereNull(usersUpdateData);
 		await database.addPosts(posts);
 	}
 }
