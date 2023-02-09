@@ -383,15 +383,25 @@ async function loadForumFile(filepath, htmlRoot, opts) {
 
 		const authorName = topicData.authorName;
 		delete topicData.authorName;
-		const authorId   = await database.getUserIdByName(authorName);
+		let authorId     = await database.getUserIdByName(authorName);
+
+		// Topics listed on a Forum page have a "Started By" field. This field
+		// reflects the name of the Topic's author at the time the Topic was
+		// created. If the User who created the Topic was renamed later, this
+		// lookup will fail.
+		// We'll infer author from the first Post in the Topic later.
+		if (!authorId) {
+			console.warn(`No user found with name: ${authorName}`);
+			authorId = database.PLACEHOLDER_ID;
+		}
 
 		topics.push({
 			...topicData,
 			forum_id:    forumId,
 			author_id:   authorId,
-			created_at:  0, // We'll get this later from Posts.
+			created_at:  database.PLACEHOLDER_ID, // We'll get this later from Posts.
 			mirrored_at: renderTime,
-		})
+		});
 	}
 
 	if (opts.print_json) {
@@ -494,22 +504,24 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 	// and quote, we'll grab those too.
 	const posts = [];
 	const users = [];
-	let topicCreationTimeUpdate;
+	let firstPost;
 	for (let i = 0; i < postRows.length; i += 2) {
-		const data = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
+		const postInfo = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
 
-		const createdStr = data.post.createdStr;
-		delete data.post.createdStr;
-		data.post.created_at = stringToDate(createdStr, renderTimeStr);
+		const createdStr = postInfo.post.createdStr;
+		delete postInfo.post.createdStr;
+		postInfo.post.created_at = stringToDate(createdStr, renderTimeStr);
 
 		// Derive Topic created_at timestamp from first Post of first page.
+		// Consider the first Post's author to be the Topic author if we failed
+		// the username lookup at the Forum stage (e.g. user was renamed).
 		if (isFirstPage && i === 0) {
-			topicCreationTimeUpdate = data.post.created_at;
+			firstPost = postInfo.post;
 		}
 
-		users.push(data.user);
+		users.push(postInfo.user);
 		posts.push({
-			...data.post,
+			...postInfo.post,
 			topic_id:    topicId,
 			mirrored_at: renderTime,
 		});
@@ -517,7 +529,8 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 
 	const topicUpdateData = {
 		id:         topicId,
-		created_at: topicCreationTimeUpdate,
+		author_id:  firstPost?.author_id,
+		created_at: firstPost?.created_at,
 	};
 
 	if (opts.print_json) {
@@ -525,9 +538,7 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 		console.log('User updates', users);
 		console.log('Posts', posts);
 	} else {
-		if (topicCreationTimeUpdate) {
-			await database.updateTopicCreationTime(topicUpdateData);
-		}
+		await database.patchTopicPlaceholders(topicUpdateData);
 		// TODO only update user if the respective field is null
 		await database.updateUsers(users);
 		await database.addPosts(posts);

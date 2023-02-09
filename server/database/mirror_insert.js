@@ -7,6 +7,9 @@ const STATS      = 'stats';
 const TOPICS     = 'topics';
 const USERS      = 'users';
 
+/** Satisfies not-null constraints we'll fill in at a later step. */
+const PLACEHOLDER_ID = 0;
+
 async function addCategory(category) {
 	return knex(CATEGORIES)
 		.insert(category)
@@ -45,10 +48,16 @@ async function addTopics(topics) {
 		.onConflict().ignore();
 }
 
-async function updateTopicCreationTime(topicCreationTime) {
-	return knex(TOPICS)
-		.where('id', topicCreationTime.id)
-		.update('created_at', topicCreationTime.created_at);
+async function patchTopicPlaceholders(topicPatch) {
+	return Promise.all(['author_id', 'created_at']
+		.filter(field => topicPatch[field])
+		.map(field => knex(TOPICS)
+			.update(field, topicPatch[field])
+			.where({
+				id:      topicPatch.id,
+				[field]: PLACEHOLDER_ID,
+			})
+		));
 }
 
 async function addUser(user) {
@@ -59,10 +68,7 @@ async function addUser(user) {
 
 async function getUserIdByName(name) {
 	const row = await knex(USERS).first('id').where('name', name);
-	if (!row) {
-		throw new Error(`No user found with name: ${name}`);
-	}
-	return row.id;
+	return row?.id;
 }
 
 async function updateUsers(userUpdates) {
@@ -74,6 +80,7 @@ async function updateUsers(userUpdates) {
 }
 
 module.exports = {
+	PLACEHOLDER_ID,
 	addCategory,
 	addForums,
 	addPosts,
@@ -81,7 +88,7 @@ module.exports = {
 	addTopics,
 	addUser,
 	getUserIdByName,
+	patchTopicPlaceholders,
 	updateCategorySorts,
-	updateTopicCreationTime,
 	updateUsers,
 };
