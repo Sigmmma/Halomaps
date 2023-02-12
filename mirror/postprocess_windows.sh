@@ -12,6 +12,7 @@ MIRROR_DIR=$1
 # tl;dr: Windows sucks, so we replace question marks with underscores.
 echo "Tweaking links and filenames for Windows (this will take a while)"
 
+mv "$MIRROR_DIR/style.cfm?" "$MIRROR_DIR/style.cfm_"
 find $MIRROR_DIR -type f -wholename '*index.*' \
 	| while read file; do
 		echo "$file"
