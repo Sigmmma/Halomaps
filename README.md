@@ -19,8 +19,8 @@ The mirror can also be downloaded and browsed offline as a series of rendered-ou
 **Warning:** unzips to a directory containing **52,000** files that total **1.6GB**! This can cripple some file browsers!<br/>
 **Note:** the server that ran the mirror was on the US East Coast timezone (GMT-5:00), so all dates rendered in HTML are relative to that time.
 
-- [Download for Linux](mirror/forum.halomaps.org_linux.7z) (has original file names, won't work on Windows)
-- [Download for Windows](mirror/forum.halomaps.org_windows.7z) (file names and links modified to work on Windows)
+- [Download for Linux](https://github.com/Sigmmma/Halomaps/raw/master/mirror/forum.halomaps.org_linux.7z) (has original file names, won't work on Windows)
+- [Download for Windows](https://github.com/Sigmmma/Halomaps/raw/master/mirror/forum.halomaps.org_windows.7z) (file names and links modified to work on Windows)
 
 ## License
 Copyright 2023 [Mimickal](https://github.com/Mimickal)<br/>
