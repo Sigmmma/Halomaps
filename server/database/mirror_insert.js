@@ -79,6 +79,30 @@ async function updateUsersWhereNull(userPatches) {
 	));
 }
 
+async function getMismatchedTopicAuthors() {
+	return knex
+		.count(`${TOPICS}.id AS topic_count`)
+		.select(
+			`${TOPICS}.author_name`,
+			`${USERS}.name AS user_name`,
+		)
+		.from(USERS)
+		.innerJoin(TOPICS, function() {
+			this
+				.on(   `${USERS}.id`,    '=', `${TOPICS}.author_id`)
+				.andOn(`${USERS}.name`, '!=', `${TOPICS}.author_name`);
+		})
+		.groupBy(`${TOPICS}.author_name`)
+		.groupBy(`${USERS}.name`)
+		.orderBy(`${TOPICS}.author_name`);
+}
+
+async function clearAuthorIdForTopicsStartedBy(authorNames) {
+	return knex(TOPICS)
+		.update('author_id', null)
+		.whereIn('author_name', authorNames);
+}
+
 module.exports = {
 	addCategory,
 	addForums,
@@ -86,6 +110,8 @@ module.exports = {
 	addStats,
 	addTopics,
 	addUser,
+	clearAuthorIdForTopicsStartedBy,
+	getMismatchedTopicAuthors,
 	getUserIdByName,
 	patchTopicWhereNull,
 	updateCategorySorts,

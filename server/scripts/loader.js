@@ -48,7 +48,7 @@ const POST_TIME_REGEX = /Posted: ([\w,:@ ]+)/;
  * }
  * ```
  */
-async function load(value, opts) {
+async function load(value, opts={}) {
 	const valueStats = await stat(value);
 	if (valueStats.isFile()) {
 		await loadFile(value, undefined, opts);
@@ -57,6 +57,9 @@ async function load(value, opts) {
 	} else {
 		throw new Error(`Not a file or directory: ${value}`);
 	}
+
+	await cleanInvalidTopicAuthors(opts);
+	await applyManualFixes(opts);
 }
 
 /**
@@ -447,7 +450,7 @@ function extractTopicInfoFromRow(topicRow) {
 
 	// span elements contain author name, total posts, and total views.
 	const topicRowCells = topicRow.querySelectorAll('td');
-	const authorName = topicRowCells.item(2).textContent;
+	const authorName = topicRowCells.item(2).textContent.trim();
 	const topicViews = Number.parseInt(topicRowCells.item(4).textContent);
 
 	return {
@@ -513,8 +516,8 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 		postInfo.post.created_at = stringToDate(createdStr, renderTimeStr);
 
 		// Derive Topic created_at timestamp from first Post of first page.
-		// Consider the first Post's author to be the Topic author if we failed
-		// the username lookup at the Forum stage (e.g. user was renamed).
+		// Also (possibly temporarily) use the first Post's author as the Topic
+		// author if we failed the User lookup at the Forum stage.
 		if (isFirstPage && i === 0) {
 			firstPost = postInfo.post;
 		}
@@ -704,6 +707,121 @@ function stringToDateInner(date_str) {
 		}
 	}
 	throw new Error(`Cannot parse date: ${date_str}`);
+}
+
+/**
+ * tl;dr: Detects and fixes incorrect Topic authors.
+ *
+ * Topics display the author's name as it was when the Topic was created, even
+ * if the author User was renamed or deleted. Because of this, we occasionally
+ * fail to match an author name to a User in {@link loadForumFile}.
+ *
+ * Our initial assumption is that the Topic's author was simply renamed, and
+ * thus the first Post's author is the Topic author. This happens in
+ * {@link loadTopicFile}. This assumption **does not** hold if the author's
+ * initial Post was deleted for some reason (usually because the User was also
+ * deleted).
+ *
+ * We resolve this scenario using rows of data that look like this:
+ * `number_of_topics | topic_author_name | first_post_current_user_name`
+ *
+ * Case 1:
+ *
+ * - 34 | iron clad | ICEE
+ *
+ * Conclusion: "iron clad" was renamed to ICEE.
+ * Action:     Nothing, `author_id` already set correctly in {@link loadTopicFile}.
+ * Rationale:  There are 34 threads started by "iron clad", and in all cases the
+ *             first Post was from ICEE.
+ *             NOTE: There are a select few instances where this assumption
+ *             doesn't hold when `number_of_topics === 2`, but we manually
+ *             handle these in {@link applyManualFixes}.
+ *
+ * Case 2:
+ *
+ * - 1 | Asshole | Donut
+ * - 1 | Asshole | ICEE
+ *
+ * Conclusion: Asshole's opening Post was deleted.
+ * Action:     Null `author_id`.
+ * Rationale:  Asshole cannot have been both Donut and ICEE's previous name.
+ *
+ * Case 3:
+ *
+ * - 1 | Asshole | Donut
+ *
+ * Conclusion: Asshole's opening Post was deleted.
+ * Action:     Null `author_id`.
+ * Rationale:  There is only one Topic by Asshole. In theory, Asshole could have
+ *             been renamed to Donut. In practice, there are only a few
+ *             instances of this, and a manual review of all of them determined
+ *             that Asshole was always a deleted User.
+ *
+ * @param {Object<string, any>} opts See {@link load}.
+ */
+async function cleanInvalidTopicAuthors(opts) {
+	const mismatched = await database.getMismatchedTopicAuthors();
+
+	// We can detect all of the above cases with this structure:
+	// A Map of author_names -> (Map of user_names -> topic_count).
+	const authorStatMap = new Map();
+	mismatched.forEach(row => {
+		if (!authorStatMap.has(row.author_name)) {
+			authorStatMap.set(row.author_name, new Map());
+		}
+		authorStatMap.get(row.author_name).set(row.user_name, row.topic_count);
+	});
+
+	// Case 1 authors are (almost) all existing, renamed Users.
+	const case1Authors = new Set(
+		Array.from(authorStatMap.entries())
+			.filter( ([authorName, userMap]) =>
+				userMap.size === 1 && userMap.values().next().value > 1
+			)
+			.map( ([authorName, userMap]) => authorName)
+	);
+
+	const case2Authors = Array.from(authorStatMap.entries())
+		.filter( ([authorName, userMap]) => userMap.size > 1)
+		.map( ([authorName, userMap]) => authorName);
+
+	const case3Authors = Array.from(authorStatMap.entries())
+		.filter( ([authorName, userMap]) =>
+			// Read as: a single topic with this author -> user association
+			userMap.size === 1 && userMap.values().next().value === 1
+		)
+		.map( ([authorName, userMap]) => authorName);
+
+	const deletedAuthors = [...new Set([...case2Authors, ...case3Authors])];
+
+	if (opts.print_json) {
+		console.log('Authors with deleted Users',
+			JSON.stringify(deletedAuthors.sort(), null, 2)
+		);
+	} else {
+		await database.clearAuthorIdForTopicsStartedBy(deletedAuthors);
+	}
+}
+
+/**
+ * Despite my best efforts to catch every edge case automatically, there are
+ * a few weird, one-off things. This function manually handles them.
+ *
+ * @param {Object<string, any>} opts See {@link load}.
+ */
+async function applyManualFixes(opts) {
+	// Topic Author Case 1 exceptions:
+	// These Users are deleted, but happened to make more than one Topic where
+	// the same, undeleted User responded first.
+	const manuallyClearAuthors = [
+		'God of Halo',
+		'hellreaper192',
+	];
+	if (opts.print_json) {
+		console.log('Manually clear authors', manuallyClearAuthors);
+	} else {
+		await database.clearAuthorIdForTopicsStartedBy(manuallyClearAuthors);
+	}
 }
 
 module.exports = {
