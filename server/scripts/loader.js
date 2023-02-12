@@ -576,8 +576,22 @@ function extractPostInfoFromRows(postRow, idRow) {
 	// Yes, this is kind of dumb, but it'll help catch other specials.
 	let userSpecial = null;
 	if (specialTextNode.textContent.trim().length > 0) {
-		userSpecial = specialTextNode.textContent.trim();
-	} else if (specialImgNode && specialImgNode.nodeName === 'IMG') {
+		// Some text specials are split across several lines (i.e. nodes).
+		const textNodes = [];
+		for (
+			let curNode = specialTextNode;
+			!curNode.textContent.trim().startsWith('Joined');
+			curNode = curNode.nextSibling
+		) {
+			textNodes.push(curNode);
+		}
+
+		userSpecial = textNodes
+			.map(node => node.textContent.trim())
+			.filter(text => text)
+			.join('\n');
+	}
+	else if (specialImgNode && specialImgNode.nodeName === 'IMG') {
 		if (specialImgNode.getAttribute('src').includes('moderator')) {
 			userSpecial = 'moderator';
 		} else {
