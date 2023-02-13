@@ -542,7 +542,7 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 		console.log('Posts', posts);
 	} else {
 		await database.patchTopicWhereNull(topicUpdateData);
-		await database.updateUsersWhereNull(usersUpdateData);
+		await database.patchUsers(usersUpdateData);
 		await database.addPosts(posts);
 	}
 }
