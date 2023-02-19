@@ -41,7 +41,10 @@ server.get('/index.cfm', async (request, response) => {
 		);
 
 		if (returnedData === undefined) {
-			writeText(response, 400, `Invalid page: ${request.query.page}`);
+			writeText(response, 400, request.query.page
+				? `Invalid page: ${request.query.page}`
+				: 'No page requested'
+			);
 		} else if (typeof returnedData === 'string') {
 			writeText(response, 200, returnedData);
 		} else {
