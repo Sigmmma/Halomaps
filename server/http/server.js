@@ -33,19 +33,30 @@ server.get('/index.cfm', async (request, response) => {
 			request.query[key.toLowerCase()] = value.toLowerCase();
 		});
 
-		const returnedData = (
-			request.query.page === 'home'     ? await getHome(request)  :
-			request.query.page === 'forum'    ? await getForum(request) :
-			request.query.page === 'userinfo' ? await getUser(request)  :
-			request.query.page === 'topic'    ? await getTopic(request) :
-			undefined
-		);
+		// Scala does one cool thing, and that is assignment from switch-case.
+		// Thankfully, we can hack it in a better language.
+		// undefined means an invalid page was requested (or none at all).
+		// null means the page was valid, but returns no data.
+		const returnedData = await {
+			'forgotpassword': () => null,
+			'forum':          getForum,
+			'home':           getHome,
+			'login':          () => null,
+			'members':        getMembers,
+			'recent':         getRecent,
+			'register':       () => null,
+			'search':         getSearch,
+			'topic':          getTopic,
+			'userinfo':       getUser,
+		}[request.query.page]?.(request);
 
 		if (returnedData === undefined) {
 			writeText(response, 400, request.query.page
 				? `Invalid page: ${request.query.page}`
 				: 'No page requested'
 			);
+		} else if (returnedData === null) {
+			writeEmpty(response, 204);
 		} else if (typeof returnedData === 'string') {
 			writeText(response, 200, returnedData);
 		} else {
@@ -72,6 +83,16 @@ server.get('/info', (_request, response) => {
 		'',
 	].join('\n'));
 });
+
+/**
+ * Returns an empty response to the client.
+ *
+ * @param {Response} response
+ * @param {number} code
+ */
+function writeEmpty(response, code) {
+	response.writeHead(code).end();
+}
 
 /**
  * Returns a "text/plain" response to the client.
@@ -152,15 +173,51 @@ async function getHome(request) {
 	};
 }
 
-function getForum() {
+/**
+ *
+ * @param {Request} request
+ */
+async function getSearch(request) {
 	return 'TODO';
 }
 
-function getUser() {
+/**
+ *
+ * @param {Request} request
+ */
+async function getMembers(request) {
 	return 'TODO';
 }
 
-function getTopic() {
+/**
+ *
+ * @param {Request} request
+ */
+async function getRecent(request) {
+	return 'TODO';
+}
+
+/**
+ *
+ * @param {Request} request
+ */
+async function getForum(request) {
+	return 'TODO';
+}
+
+/**
+ *
+ * @param {Request} request
+ */
+async function getUser(request) {
+	return 'TODO';
+}
+
+/**
+ *
+ * @param {Request} request
+ */
+async function getTopic(request) {
 	return 'TODO';
 }
 
