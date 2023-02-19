@@ -1,4 +1,5 @@
 const polka = require('polka');
+const database = require('../database/server_fetch');
 
 /**
  * A simple HTTP server that recreates Halomaps' queries.
@@ -32,10 +33,10 @@ server.get('/index.cfm', async (request, response) => {
 		});
 
 		const returnedData = (
-			request.query.page === 'home'     ? getHome(request)  :
-			request.query.page === 'forum'    ? getForum(request) :
-			request.query.page === 'userinfo' ? getUser(request)  :
-			request.query.page === 'topic'    ? getTopic(request) :
+			request.query.page === 'home'     ? await getHome(request)  :
+			request.query.page === 'forum'    ? await getForum(request) :
+			request.query.page === 'userinfo' ? await getUser(request)  :
+			request.query.page === 'topic'    ? await getTopic(request) :
 			undefined
 		);
 
@@ -47,10 +48,15 @@ server.get('/index.cfm', async (request, response) => {
 			writeJson(response, 200, returnedData);
 		}
 	} catch (err) {
-		console.error(err);
-		writeText(response, 500, 'Internal server error');
+		if (err instanceof RequestError) {
+			writeText(response, err.code, err.message);
+		} else {
+			console.error(err);
+			writeText(response, 500, 'Internal server error');
+		}
 	}
 });
+
 
 /**
  * Returns a "text/plain" response to the client.
@@ -80,10 +86,55 @@ function writeJson(response, code, data) {
 
 /**
  * Fetches and returns the data needed to render the home page.
- * @returns
+ *
+ * Reference:
+ *   - index.cfm?page=home
+ *   - index.cfm?page=home&category=1
+ * @param {Request} request
  */
-function getHome() {
-	return 'TODO';
+async function getHome(request) {
+	let categoryId = Number.parseInt(request.query.category);
+	if (Number.isNaN(categoryId)) {
+		categoryId = undefined;
+	}
+
+	const categories = await database.getCategoriesById(categoryId);
+	if (categories.length === 0) {
+		throw new RequestError(404, `No Category with ID ${categoryId}`);
+	}
+
+	const forums     = await database.getForumsByCategoryId(categoryId);
+	const stats      = await database.getStats();
+	const moderators = await database.getModerators();
+
+	for await (const forum of forums) {
+		const lastPostUser = await database.getLatestPostUserInForum(forum.id);
+		forum.last_post_user = lastPostUser;
+		forum.moderators     = moderators;
+	}
+
+	// Enables faster Category lookup in following forums.forEach
+	const categoryMap = categories.reduce(
+		(map, category) => map.set(category.id, category),
+		new Map()
+	);
+
+	// Split Forums into lists in their respective Categories.
+	// Forums come sorted from the database, so these Forum lists are already sorted.
+	forums.forEach(forum => {
+		const category = categoryMap.get(forum.category_id);
+
+		if (!category.forums) {
+			category.forums = [];
+		}
+
+		category.forums.push(forum);
+	});
+
+	return {
+		categories,
+		stats,
+	};
 }
 
 function getForum() {
@@ -96,6 +147,15 @@ function getUser() {
 
 function getTopic() {
 	return 'TODO';
+}
+
+/** An Error that can specify an HTTP response code. */
+class RequestError extends Error {
+	code;
+	constructor(code, message) {
+		super(message);
+		this.code = code;
+	}
 }
 
 module.exports = server;
