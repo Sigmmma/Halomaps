@@ -22,6 +22,11 @@ const info = require('../package.json');
  */
 const server = polka();
 
+server.use('/', (request, _response, next) => {
+	console.log(`${new Date().toISOString()} ${request.method} ${request.url}`);
+	next();
+});
+
 server.get('/index.cfm', async (request, response) => {
 	try {
 		// Halomaps used inconsistent casing on URLs,
