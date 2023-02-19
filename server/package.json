@@ -1,8 +1,15 @@
 {
   "name": "halomaps-forum-server",
   "version": "0.0.0",
-  "description": "A read-only server to browse the archive of http://forum.halomaps.org",
+  "description": "This is an open source, read-only reimplementation of the Halomaps forum (http://forum.halomaps.org) to browse our archive that preserves usernames and IDs.",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sigmmma/Halomaps"
+  },
+  "bugs": {
+    "url": "https://github.com/Sigmmma/Halomaps/issues"
+  },
   "main": "main.js",
   "scripts": {
     "knex": "npx knex --knexfile database/knexfile.js",

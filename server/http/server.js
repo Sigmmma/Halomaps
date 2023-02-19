@@ -1,5 +1,6 @@
 const polka = require('polka');
 const database = require('../database/server_fetch');
+const info = require('../package.json');
 
 /**
  * A simple HTTP server that recreates Halomaps' queries.
@@ -60,6 +61,17 @@ server.get('/index.cfm', async (request, response) => {
 	}
 });
 
+server.get('/info', (_request, response) => {
+	writeText(response, 200, [
+		info.description,
+		'',
+		`Server version:   ${info.version}`,
+		`Source code:      ${info.repository.url}`,
+		`Report bugs:      ${info.bugs.url}`,
+		`Archive download: ${info.repository.url}#Download`,
+		'',
+	].join('\n'));
+});
 
 /**
  * Returns a "text/plain" response to the client.
