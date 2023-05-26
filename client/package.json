@@ -1,0 +1,41 @@
+{
+  "name": "halomaps-forum-client",
+  "version": "0.0.0",
+  "description": "This is an open source, read-only reimplementation of the Halomaps forum (http://forum.halomaps.org) to browse our archive that preserves usernames and IDs.",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sigmmma/Halomaps"
+  },
+  "bugs": {
+    "url": "https://github.com/Sigmmma/Halomaps/issues"
+  },
+  "main": "main.js",
+  "scripts": {
+    "build": "webpack",
+    "clean": "rm dist/*",
+    "start": "webpack server --port 9000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "halomaps",
+    "forum",
+    "archive",
+    "halo",
+    "modding"
+  ],
+  "author": "Mimickal <mimickal.dev@gmail.com>",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@types/node": "^20.2.4",
+    "@types/react": "^18.2.7",
+    "@types/react-dom": "^18.2.4",
+    "html-webpack-plugin": "^5.5.1",
+    "react-dom": "^18.2.0",
+    "ts-loader": "^9.4.3",
+    "typescript": "^5.0.4",
+    "webpack": "^5.84.0",
+    "webpack-cli": "^5.1.1",
+    "webpack-dev-server": "^4.15.0"
+  }
+}
