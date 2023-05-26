@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createUseStyles } from 'react-jss';
 
 import FullHeader from './components/Header';
+import Footer from './components/Footer';
 
 const useGlobalStyles = createUseStyles({
 	'@global': {
@@ -11,6 +12,7 @@ const useGlobalStyles = createUseStyles({
 			fontSize: 12,
 			marginTop: 0,
 			minWidth: '600px',
+			marginBottom: '2px',
 		},
 		'a:hover': {
 			color: 'red',
@@ -24,5 +26,8 @@ root.render(<App />);
 
 function App(): JSX.Element {
 	useGlobalStyles();
-	return <FullHeader />;
+	return <>
+		<FullHeader />
+		<Footer date={new Date()} duration={12345} />
+	</>;
 }
