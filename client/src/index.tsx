@@ -10,7 +10,7 @@ const useGlobalStyles = createUseStyles({
 			fontFamily: 'Verdana, Geneva, sans-serif',
 			fontSize: 12,
 			marginTop: 0,
-			minWidth: '640px',
+			minWidth: '600px',
 		},
 	},
 });
