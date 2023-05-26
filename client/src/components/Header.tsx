@@ -1,14 +1,13 @@
 import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
-import { Design } from '../images';
-
-const VERTICAL_SPACING = '10px';
+import { Design, Icons } from '../images';
 
 export default function FullHeader(): JSX.Element {
 	return <>
 		<Header />
 		<NavBar />
+		<Controls />
 	</>;
 }
 
@@ -17,7 +16,7 @@ export default function FullHeader(): JSX.Element {
 //******************************************************************************
 
 const HEADER_BG_COLOR = '#757F8D';
-const HEADER_HEIGHT = '73px'; // Matches toplogo_forum.gif
+const HEADER_HEIGHT = '73px'; // Matches Design.TOP_LOGO
 const useHeaderStyles = createUseStyles({
 	header: {
 		backgroundColor: HEADER_BG_COLOR,
@@ -33,7 +32,7 @@ const useHeaderStyles = createUseStyles({
 		fontSize: '1.6em',
 		height: HEADER_HEIGHT,
 		margin: 0,
-		paddingTop: VERTICAL_SPACING,
+		paddingTop: '10px',
 		paddingRight: '50px',
 		width: '550px',
 	},
@@ -71,11 +70,15 @@ const NAV_ITEMS = [
 
 const NAV_BG_IMAGE = `url(${Design.NAV_BG})`;
 const NAV_HEIGHT = '42px';
+const NAV_MARGIN = '10px';
 const useNavBarStyles = createUseStyles({
 	bar: {
 		backgroundImage: NAV_BG_IMAGE,
 		height: NAV_HEIGHT,
-		marginBottom: VERTICAL_SPACING,
+		marginBottom: NAV_MARGIN,
+	},
+	container: {
+		overflow: 'auto',
 	},
 	link: {
 		backgroundImage: NAV_BG_IMAGE,
@@ -85,8 +88,8 @@ const useNavBarStyles = createUseStyles({
 		float: 'left',
 		fontWeight: 'bold',
 		lineHeight: NAV_HEIGHT,
-		paddingLeft: VERTICAL_SPACING,
-		paddingRight: VERTICAL_SPACING,
+		paddingLeft: NAV_MARGIN,
+		paddingRight: NAV_MARGIN,
 		textDecoration: 'none',
 	},
 });
@@ -94,12 +97,55 @@ const useNavBarStyles = createUseStyles({
 function NavBar(): JSX.Element {
 	const styles = useNavBarStyles();
 	return (
-		<div className={styles.bar}>
-			{NAV_ITEMS.map(item => (
-				<a
-					className={styles.link}
-					href={item.url}
-				>{item.label}</a>
+		<div className={styles.container}>
+			<div className={styles.bar}>
+				{NAV_ITEMS.map((item, idx) => (
+					<a className={styles.link} href={item.url} key={idx}>
+						{item.label}
+					</a>
+				))}
+			</div>
+		</div>
+	);
+}
+
+//******************************************************************************
+// Controls
+//******************************************************************************
+
+const CONTROL_ITEMS = [
+	// TODO need to add actual URLs
+	{ label: 'Home',         icon: Icons.HOME,     url: '' },
+	{ label: 'Search',       icon: Icons.SEARCH,   url: '' },
+	{ label: 'Register',     icon: Icons.REGISTER, url: '' },
+	{ label: 'Login',        icon: Icons.LOGIN,    url: '' },
+	{ label: 'Member List',  icon: Icons.MEMBERS,  url: '' },
+	{ label: 'Recent Posts', icon: Icons.RECENT,   url: '' },
+];
+
+const useControlStyles = createUseStyles({
+	container: {
+		marginLeft: '190px',
+		marginTop: '15px',
+	},
+	icon: {
+		marginRight: '3px',
+		verticalAlign: 'middle',
+	},
+	item: {
+		marginRight: '10px',
+	},
+});
+
+function Controls(): JSX.Element {
+	const styles = useControlStyles();
+	return (
+		<div className={styles.container}>
+			{CONTROL_ITEMS.map((item, idx) => (
+				<a className={styles.item} href={item.url} key={idx}>
+					<img className={styles.icon} src={item.icon} />
+					{item.label}
+				</a>
 			))}
 		</div>
 	);

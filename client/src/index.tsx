@@ -12,6 +12,9 @@ const useGlobalStyles = createUseStyles({
 			marginTop: 0,
 			minWidth: '600px',
 		},
+		'a:hover': {
+			color: 'red',
+		},
 	},
 });
 
