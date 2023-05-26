@@ -11,12 +11,13 @@ module.exports = {
 				use: 'ts-loader',
 			},
 			{
-				test: /\.(otf|ico|svg)$/,
+				test: /\.(gif)$/,
 				type: 'asset/resource',
 			},
 		],
 	},
 	plugins: [new HtmlWebpackPlugin({
+		favicon: path.join(__dirname, 'static', 'favicon.ico'),
 		template: path.join(__dirname, 'static', 'index.html'),
 	})],
 	resolve: {
