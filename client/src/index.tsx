@@ -1,8 +1,8 @@
 import React, { JSX } from 'react';
 import { createRoot } from 'react-dom/client';
-
-import Header from './components/Header';
 import { createUseStyles } from 'react-jss';
+
+import FullHeader from './components/Header';
 
 const useGlobalStyles = createUseStyles({
 	'@global': {
@@ -21,5 +21,5 @@ root.render(<App />);
 
 function App(): JSX.Element {
 	useGlobalStyles();
-	return <Header />;
+	return <FullHeader />;
 }

@@ -1,25 +1,22 @@
 import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
-const NAV_ITEMS = [
-	{ label: 'Halo Maps Home',     url: 'http://www.halomaps.org'       },
-	{ label: 'Halo CE Maps',       url: 'http://hce.halomaps.org'       },
-	{ label: 'Halo CE Videos',     url: 'http://videos.halomaps.org'    },
-	{ label: 'Halo CE Art',        url: 'http://art.halomaps.org'       },
-	{ label: 'Halo 2 Vista',       url: 'http://h2v.halomaps.org'       },
-	{ label: 'Halo Movies',        url: 'http://www.halomovies.org'     },
-	{ label: 'Halo CE Chronicles', url: 'http://hcec.halomaps.org'      },
-	{ label: 'Portal Maps',        url: 'http://www.portalgamemaps.com' },
-	{ label: 'Forum',              url: 'http://forum.halomaps.org'     },
-];
+const VERTICAL_SPACING = '10px';
+
+export default function FullHeader(): JSX.Element {
+	return <>
+		<Header />
+		<NavBar />
+	</>;
+}
+
+//******************************************************************************
+// Header
+//******************************************************************************
 
 const HEADER_BG_COLOR = '#757F8D';
 const HEADER_HEIGHT = '73px'; // Matches toplogo_forum.gif
-const NAV_BG_IMAGE = `url(${require('../../static/mbg3.gif')})`;
-const NAV_HEIGHT = '42px';
-const VERTICAL_SPACING = '10px';
-
-const useStyles = createUseStyles({
+const useHeaderStyles = createUseStyles({
 	header: {
 		backgroundColor: HEADER_BG_COLOR,
 		backgroundImage: `url(${require('../../static/toplogo_forum.gif')})`,
@@ -38,12 +35,47 @@ const useStyles = createUseStyles({
 		paddingRight: '50px',
 		width: '550px',
 	},
-	navBar: {
+});
+
+function Header(): JSX.Element {
+	const styles = useHeaderStyles();
+	return (
+		<div className={styles.header}>
+			<span className={styles.text}>
+				A Community discussion forum for Halo Custom Edition,
+				Halo 2 Vista, Portal and Halo Machinima
+			</span>
+		</div>
+	);
+}
+
+//******************************************************************************
+// NavBar
+//******************************************************************************
+
+const NAV_ITEMS = [
+	{ label: 'Halo Maps Home',     url: 'http://www.halomaps.org'       },
+	{ label: 'Halo CE Maps',       url: 'http://hce.halomaps.org'       },
+	{ label: 'Halo CE Videos',     url: 'http://videos.halomaps.org'    },
+	{ label: 'Halo CE Art',        url: 'http://art.halomaps.org'       },
+	{ label: 'Halo 2 Vista',       url: 'http://h2v.halomaps.org'       },
+	{ label: 'Halo Movies',        url: 'http://www.halomovies.org'     },
+	{ label: 'Halo CE Chronicles', url: 'http://hcec.halomaps.org'      },
+	{ label: 'Portal Maps',        url: 'http://www.portalgamemaps.com' },
+
+	// TODO we probably want to do something special here to highlight this
+	{ label: 'Forum',              url: 'http://forum.halomaps.org'     },
+];
+
+const NAV_BG_IMAGE = `url(${require('../../static/mbg3.gif')})`;
+const NAV_HEIGHT = '42px';
+const useNavBarStyles = createUseStyles({
+	bar: {
 		backgroundImage: NAV_BG_IMAGE,
 		height: NAV_HEIGHT,
 		marginBottom: VERTICAL_SPACING,
 	},
-	navLink: {
+	link: {
 		backgroundImage: NAV_BG_IMAGE,
 		borderRight: '1px solid black',
 		color: 'white',
@@ -57,23 +89,16 @@ const useStyles = createUseStyles({
 	},
 });
 
-export default function Header(): JSX.Element {
-	const styles = useStyles();
-
-	return <>
-		<div className={styles.header}>
-			<span className={styles.text}>
-				A Community discussion forum for Halo Custom Edition,
-				Halo 2 Vista, Portal and Halo Machinima
-			</span>
-		</div>
-		<div className={styles.navBar}>
+function NavBar(): JSX.Element {
+	const styles = useNavBarStyles();
+	return (
+		<div className={styles.bar}>
 			{NAV_ITEMS.map(item => (
 				<a
-					className={styles.navLink}
+					className={styles.link}
 					href={item.url}
 				>{item.label}</a>
 			))}
 		</div>
-	</>;
+	);
 }
