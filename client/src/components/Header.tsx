@@ -1,6 +1,8 @@
 import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
+import { Design } from '../images';
+
 const VERTICAL_SPACING = '10px';
 
 export default function FullHeader(): JSX.Element {
@@ -19,7 +21,7 @@ const HEADER_HEIGHT = '73px'; // Matches toplogo_forum.gif
 const useHeaderStyles = createUseStyles({
 	header: {
 		backgroundColor: HEADER_BG_COLOR,
-		backgroundImage: `url(${require('../../static/toplogo_forum.gif')})`,
+		backgroundImage: `url(${Design.TOP_LOGO})`,
 		backgroundRepeat: 'no-repeat',
 		height: HEADER_HEIGHT,
 		overflow: 'hidden',
@@ -67,7 +69,7 @@ const NAV_ITEMS = [
 	{ label: 'Forum',              url: 'http://forum.halomaps.org'     },
 ];
 
-const NAV_BG_IMAGE = `url(${require('../../static/mbg3.gif')})`;
+const NAV_BG_IMAGE = `url(${Design.NAV_BG})`;
 const NAV_HEIGHT = '42px';
 const useNavBarStyles = createUseStyles({
 	bar: {
