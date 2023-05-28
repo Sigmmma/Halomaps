@@ -91,6 +91,10 @@ const useNavBarStyles = createUseStyles({
 		paddingLeft: NAV_MARGIN,
 		paddingRight: NAV_MARGIN,
 		textDecoration: 'none',
+		'&:hover': {
+			backgroundImage: `url(${Design.NAV_BG_BRIGHT})`,
+			color: 'white',
+		},
 	},
 });
 
