@@ -26,9 +26,10 @@ const useTableStyles = createUseStyles({
 	},
 });
 
-interface Column<T> {
+export interface Column<T> {
 	blueBg?: boolean;
-	header: string;
+	header?: string;
+	span?: number;
 	width?: Property.Width<(string & {}) | number>; // Stolen from react-jss for type info
 	onRender: (data: T) => ReactNode;
 }
@@ -57,17 +58,31 @@ function TableHeader<T>({
 	const styles = useTableStyles();
 	return <>
 		<colgroup>
-			{columns.map((column, idx) => (
-				<col width={column.width} key={idx} />
-			))}
+			{columns
+				.filter(column => column.header)
+				.map((column, idx) => (
+					<col
+						key={idx}
+						span={column.span}
+						width={column.width}
+					/>
+				))
+			}
 		</colgroup>
 
 		<thead><tr>
-			{columns.map((column, idx) => (
-				<th className={styles.header} key={idx}>
-					{column.header}
-				</th>
-			))}
+			{columns
+				.filter(column => column.header)
+				.map((column, idx) => (
+					<th
+						className={styles.header}
+						colSpan={column.span}
+						key={idx}
+					>
+						{column.header}
+					</th>
+				))
+			}
 		</tr></thead>
 	</>;
 }
@@ -103,6 +118,7 @@ function TableRow<T>({
 				<td
 					className={column.blueBg ? styles.blue : undefined}
 					key={idx}
+					style={{ width: column.width }}
 				>
 					{column.onRender(row)}
 				</td>
@@ -150,7 +166,6 @@ const useSeparatorStyles = createUseStyles({
 		backgroundImage: `url(${Design.BAR_LIGHT})`,
 		height: '18px',
 		verticalAlign: 'middle',
-		width: '100%',
 	},
 	topLink: {
 		float: 'right',
