@@ -129,7 +129,6 @@ const CONTROL_ITEMS = [
 
 const useControlStyles = createUseStyles({
 	container: {
-		marginLeft: '190px',
 		marginTop: '15px',
 	},
 	icon: {
@@ -139,12 +138,28 @@ const useControlStyles = createUseStyles({
 	item: {
 		marginRight: '10px',
 	},
+	// This reproduces HaloMaps' behavior at max width, but not at min width.
+	// The gap is a little bigger at min width, but still displays the whole
+	// control bar at 640x480 (not that anybody should be using that...).
+	//
+	// There's probably some CSS incantation that will actually accomplish this
+	// 1:1, but I can't figure it out.
+	// For anybody feeling adventurous, the position should slide like this:
+	// When <body> width = 600px -> gap 50px
+	// When <body> width = 940px -> gap 190px
+	leftSpacing: {
+		display: 'inline-block',
+		maxWidth: '190px',
+		minWidth: '50px', // We never actually reach this because 600px * 15% = 96px
+		width: '16%',
+	},
 });
 
 function Controls(): JSX.Element {
 	const styles = useControlStyles();
 	return (
 		<div className={styles.container}>
+			<div className={styles.leftSpacing}></div>
 			{CONTROL_ITEMS.map((item, idx) => (
 				<a className={styles.item} href={item.url} key={idx}>
 					<img className={styles.icon} src={item.icon} />
