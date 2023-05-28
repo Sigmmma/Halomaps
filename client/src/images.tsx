@@ -1,4 +1,6 @@
 export const Design = {
+	BAR_DARK:      image('design/darkbg.gif'),
+	BAR_LIGHT:     image('design/lightbg.gif'),
 	NAV_BG:        image('design/mbg3.gif'),
 	NAV_BG_BRIGHT: image('design/mbg4.gif'),
 	TOP_LOGO:      image('design/toplogo_forum.gif'),
@@ -11,6 +13,7 @@ export const Icons = {
 	RECENT:   image('icons/icon_recent.gif'),
 	REGISTER: image('icons/icon_register.gif'),
 	SEARCH:   image('icons/icon_search.gif'),
+	TOP:      image('icons/icon_totop.gif'),
 };
 
 function image(staticPath: string): string {
