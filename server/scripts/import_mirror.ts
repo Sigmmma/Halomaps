@@ -1,8 +1,9 @@
-const { basename } = require('path');
+import { basename } from 'path';
 
-const minimist = require('minimist');
+import minimist from 'minimist';
 
-const loader = require('./loader');
+// @ts-ignore this error will go away when this is ported to TS
+import loader from './loader';
 const { version } = require('../package.json');
 
 const argv = minimist(process.argv.slice(2), {
