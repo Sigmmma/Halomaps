@@ -1,9 +1,27 @@
-const { readdir, readFile, stat } = require('fs').promises;
-const { join, basename } = require('path');
-const { JSDOM } = require('jsdom');
-const { DateTime } = require('luxon');
+import assert from 'assert';
+import { readdir, readFile, stat } from 'fs/promises';
+import { join, basename } from 'path';
 
-const database = require('../database/mirror_insert');
+import { JSDOM } from 'jsdom';
+import { DateTime } from 'luxon';
+
+import * as database from '../database/mirror_insert';
+import {
+	CategorySort,
+	InitialTopic,
+	TopicPatch,
+	UserPatch,
+} from '../database/mirror_insert';
+import { Category, Forum, Post, Stat, Topic, User } from '../database/types';
+
+interface LoadOpts {
+	print_json: boolean;
+}
+
+type ProcessorPair = [
+	RegExp,
+	(filepath: string, htmlRoot: Document, opts: LoadOpts) => Promise<void>,
+];
 
 // Need insensitive search since filenames in mirror mix cases.
 const HOME_FILE_REGEX    = /index.cfm(?:\?|%3F|_)page=home$/i;
@@ -13,7 +31,7 @@ const FORUM_FILE_REGEX   = /index.cfm(?:\?|%3F|_)page=forum&forumid=(\d+)(?:&sta
 const TOPIC_FILE_REGEX   = /index.cfm(?:\?|%3F|_)page=topic&topicid=(\d+)(?:&start=(\d+))?/i;
 
 /** Allows us to apply and load mirror files in a specific order. */
-const FILE_PROCESSORS = [
+const FILE_PROCESSORS: ProcessorPair[] = [
 	[HOMECAT_FILE_REGEX, loadHomeCategoryFile],
 	[HOME_FILE_REGEX,    loadHomeFile],
 	[USER_FILE_REGEX,    loadUserFile],
@@ -36,19 +54,24 @@ const FORUM_ID_REGEX  = /forumid=(\d+)/i;
 const POST_ID_REGEX   = /replyid=(\d+)/i;
 const POST_TIME_REGEX = /Posted: ([\w,:@ ]+)/;
 
+
+
 /**
  * Entry point for loading Halomaps files. Can handle a single file, or a
  * directory containing many files.
  *
- * @param {string} value path to a file or a directory.
- * @param {Object<string, any>} opts Optional loader options. Defaults:
+ * @param value path to a file or a directory.
+ * @param opts Optional loader options. Defaults:
  * ```
  * {
  *   print_json: false, // Output JSON instead of inserting into the database
  * }
  * ```
  */
-async function load(value, opts={}) {
+export async function load(
+	value: string,
+	opts: LoadOpts = { print_json: false },
+): Promise<void> {
 	const valueStats = await stat(value);
 	if (valueStats.isFile()) {
 		await loadFile(value, undefined, opts);
@@ -70,14 +93,11 @@ async function load(value, opts={}) {
  * (e.g. Topics reference a User). Because of this, we need to process each
  * page type from the mirror in a specific order. That order is defined by the
  * {@link FILE_PROCESSORS} array.
- *
- * @param {string} directory
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadDirectory(directory, opts) {
+async function loadDirectory(directory: string, opts: LoadOpts): Promise<void> {
 	const dirents = await readdir(directory, { withFileTypes: true });
 
-	const filenameSet = dirents.reduce((fileset, dirent) => {
+	const filenameSet = dirents.reduce<Set<string>>((fileset, dirent) => {
 		if (dirent.isFile()) {
 			fileset.add(dirent.name);
 		}
@@ -101,12 +121,12 @@ async function loadDirectory(directory, opts) {
 
 /**
  * Routes a single file to the appropriate loader.
- *
- * @param {string} filepath
- * @param {[RegExp, (string) => Promise<void>]?} pair
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadFile(filepath, pair, opts) {
+async function loadFile(
+	filepath: string,
+	pair: ProcessorPair | undefined,
+	opts: LoadOpts,
+): Promise<void> {
 	// If coming from loadDirectory, this work has already been done for us.
 	if (!pair) {
 		pair = FILE_PROCESSORS.find(([regex]) => regex.test(filepath));
@@ -124,7 +144,7 @@ async function loadFile(filepath, pair, opts) {
 
 	// Some pages in the mirror are empty stubs with just the common header.
 	if (document.querySelector('body > table > tbody > tr:nth-child(2)')
-		.textContent.trim().length === 0
+		?.textContent?.trim().length === 0
 	) {
 		console.log('Skipping stub file');
 		return;
@@ -147,51 +167,61 @@ async function loadFile(filepath, pair, opts) {
  * create the Forum record. Therefore, we process these sub-home pages first.
  *
  * Category sort order comes from {@link loadHomeFile}.
- *
- * @param {string} filepath
- * @param {Document} htmlRoot
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadHomeCategoryFile(filepath, htmlRoot, opts) {
-	const categoryId = Number.parseInt(
-		HOMECAT_FILE_REGEX.exec(basename(filepath))[1]
-	);
+async function loadHomeCategoryFile(
+	filepath: string,
+	htmlRoot: Document,
+	opts: LoadOpts,
+): Promise<void> {
+	const catIdMatch = HOMECAT_FILE_REGEX.exec(basename(filepath))?.[1];
+	assert(catIdMatch, 'Failed to extract Category ID');
+
+	const categoryId = Number.parseInt(catIdMatch);
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
 	// Second table contains Category / Forum info
 	const forumRows = Array.from(htmlRoot
 		.querySelector('table table:nth-child(2)')
-		.querySelectorAll('tr')
+		?.querySelectorAll('tr') ?? []
 	);
+	assert(forumRows.length > 0, 'Failed to extract Forum rows from Category');
+
 	forumRows.shift(); // Ignore constant header
 	forumRows.shift(); // Ignore outer Category row
 	const categoryRow = forumRows.shift();
 
-	const categoryName = categoryRow.querySelector('b').textContent;
+	const categoryName = categoryRow?.querySelector('b')?.textContent;
+	assert(categoryName, 'Failed to extract Category name');
 
-	const categoryData = {
+	const categoryData: Category = {
 		id:          categoryId,
 		name:        categoryName,
 		sort_index:  0, // loadHomeFile fills this in later
 		mirrored_at: renderTime,
 	};
 
-	const forumsData = forumRows.map((forumRow, index) => {
+	const forumsData: Forum[] = forumRows.map((forumRow, index) => {
 		// The cell containing the Forum's name, description, and lock status
 		const forumInfo = forumRow.querySelector('td:nth-child(2)');
 
 		const forumLocked = !!forumInfo
-			.querySelector('img')
+			?.querySelector('img')
 			?.getAttribute('src')
 			?.includes('icon_lock');
 
-		const forumLink = forumInfo.querySelector('a');
-		const forumName = forumLink.textContent;
-		const forumId   = Number.parseInt(
-			FORUM_ID_REGEX.exec(forumLink.getAttribute('href'))[1]
-		);
+		const forumLink = forumInfo?.querySelector('a');
+		assert(forumLink, 'Failed to extract a Forum link');
 
-		const forumDesc = forumInfo.querySelector('div.SMALL').textContent;
+		const forumName = forumLink.textContent;
+		assert(forumName, 'Failed to extract Forum name');
+
+		const forumId   = Number.parseInt(
+			FORUM_ID_REGEX.exec(forumLink.getAttribute('href') ?? '')?.[1] ?? ''
+		);
+		assert(!Number.isNaN(forumId), 'Failed to parse Forum ID');
+
+		const forumDesc = forumInfo?.querySelector('div.SMALL')?.textContent;
+		assert(forumDesc != null, 'Failed to extract Forum description');
 
 		return {
 			id:          forumId,
@@ -218,12 +248,12 @@ async function loadHomeCategoryFile(filepath, htmlRoot, opts) {
  *
  * Most of the work is already done by {@link loadHomeCategoryFile}. We just
  * extract Category sort order and forum stats here.
- *
- * @param {string} filepath unused
- * @param {Document} htmlRoot
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadHomeFile(filepath, htmlRoot, opts) {
+async function loadHomeFile(
+	filepath: string, // unused
+	htmlRoot: Document,
+	opts: LoadOpts,
+): Promise<void> {
 	// Categories use a third layer of nested tables, so we need to be very
 	// specific here.
 	const tables = htmlRoot.querySelectorAll('body > table > tbody > tr > td > table');
@@ -232,12 +262,17 @@ async function loadHomeFile(filepath, htmlRoot, opts) {
 
 	// We already have Categories from each Category page.
 	// We just need the Category's sort order now.
-	const categories = Array
+	const categories: CategorySort[] = Array
 		.from(forumTable.querySelectorAll('table'))
-		.map((table, index) => ({
-			sort_index: index,
-			name:       table.textContent.trim().split('\n')[0],
-		}));
+		.map((table, index) => {
+			const name = table.textContent?.trim().split('\n')[0];
+			assert(name, 'Failed to extract Category name');
+
+			return {
+				sort_index: index,
+				name: name,
+			};
+		});
 
 	const STATS_REGEX = new RegExp([
 		/(\d+) users have contributed to /,
@@ -245,18 +280,19 @@ async function loadHomeFile(filepath, htmlRoot, opts) {
 		/.*/,
 		/Most registered users online was (\d+) on ([\w:, ]+)/,
 	].map(part => part.source).join(''), 'gs');
-	const match = STATS_REGEX.exec(statsTable.textContent);
+	const match = STATS_REGEX.exec(statsTable.textContent ?? '');
+	assert(match, 'Failed to extract Forum Stats');
 
 	const renderTimeStr = extractRenderTime(htmlRoot);
 	const renderTime   = stringToDate(renderTimeStr);
-	const mostUsersAt  = stringToDate(match.at(5), renderTimeStr);
+	const mostUsersAt  = stringToDate(match.at(5)!, renderTimeStr);
 
-	const statsData = [
-		{ name: 'users',          value: match.at(1) },
-		{ name: 'topics',         value: match.at(2) },
-		{ name: 'posts',          value: match.at(3) },
-		{ name: 'most_users_num', value: match.at(4) },
-		{ name: 'most_users_at',  value: mostUsersAt },
+	const statsData: Stat[] = [
+		{ name: 'users',          value: Number.parseInt(match.at(1)!) },
+		{ name: 'topics',         value: Number.parseInt(match.at(2)!) },
+		{ name: 'posts',          value: Number.parseInt(match.at(3)!) },
+		{ name: 'most_users_num', value: Number.parseInt(match.at(4)!) },
+		{ name: 'most_users_at',  value: mostUsersAt.valueOf() },
 	].map(row => ({ ...row, mirrored_at: renderTime }) );
 
 	if (opts.print_json) {
@@ -274,15 +310,16 @@ async function loadHomeFile(filepath, htmlRoot, opts) {
  * All information for a User, other than their special field, can be extracted
  * from their individual userInfo page. Unless they don't have an avatar, then
  * they could have a quote that only renders on their posts.
- *
- * @param {string} filepath
- * @param {Document} htmlRoot
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadUserFile(filepath, htmlRoot, opts) {
+async function loadUserFile(
+	filepath: string,
+	htmlRoot: Document,
+	opts: LoadOpts,
+): Promise<void> {
 	const userId = Number.parseInt(
-		USER_FILE_REGEX.exec(basename(filepath))[1]
+		USER_FILE_REGEX.exec(basename(filepath))?.[1] ?? ''
 	);
+	assert(userId, 'Failed to extract User ID');
 
 	// TODO catch if we've already added this user (check by ID in database)
 
@@ -292,10 +329,11 @@ async function loadUserFile(filepath, htmlRoot, opts) {
 		.querySelectorAll('tr');
 	const userNameRow  = userTableRows.item(0);
 	const userInfoRows = Array.from(
-		userTableRows.item(2).querySelector('td').querySelectorAll('tr')
+		userTableRows.item(2).querySelector('td')?.querySelectorAll('tr') ?? []
 	);
 
-	const userName = userNameRow.textContent.trim().split(': ')[1];
+	const userName = userNameRow.textContent?.trim().split(': ')[1];
+	assert(userName, 'Failed to extract User name');
 
 	// From this point on, empty strings indicate the value wasn't actually
 	// provided on the page, so treat those as null.
@@ -306,35 +344,35 @@ async function loadUserFile(filepath, htmlRoot, opts) {
 	//
 	// Get the avatar filename off of the image node. Remove the "avatars" root
 	// so we can use our own solution to statically serve these files later.
-	let userAvatar = null;
-	let userQuote  = null;
-	if (userInfoRows.at(-1).textContent.startsWith('Avatar')) {
+	let userAvatar: string | null = null;
+	let userQuote: string | null = null;
+	if (userInfoRows.at(-1)?.textContent?.startsWith('Avatar')) {
 		const avatarRow = userInfoRows.pop();
 
-		userAvatar = avatarRow.querySelector('img')
+		userAvatar = avatarRow?.querySelector('img')
 			?.getAttribute('src')
-			?.replace('avatars/', '')
+			?.replace('avatars/', '') ?? null;
 
-		userQuote  = avatarRow.querySelector('td:nth-child(2)')
-			.textContent.trim() || null;
+		userQuote  = avatarRow?.querySelector('td:nth-child(2)')
+			?.textContent?.trim() ?? null;
 	}
 
 	const userFields = userInfoRows.reduce((fields, row) => {
 		const cells = row.querySelectorAll('td');
-		const fieldName  = cells.item(0).textContent.split(':')[0];
+		const fieldName  = cells.item(0).textContent!.split(':')[0];
 		const fieldValue = cells.item(1).textContent;
 		fields[fieldName] = fieldValue || null;
 		return fields;
-	}, {});
+	}, {} as Record<string, string | null>);
 
 	const renderTime = extractRenderTime(htmlRoot);
 
-	const userData = {
+	const userData: User = {
 		id:            userId,
 		name:          userName,
-		joined_at:     stringToDate(userFields['Joined'], renderTime),
-		last_visit_at: stringToDate(userFields['Last Visit'], renderTime),
-		special:       undefined,
+		joined_at:     stringToDate(userFields['Joined']!, renderTime),
+		last_visit_at: stringToDate(userFields['Last Visit']!, renderTime),
+		special:       null,
 		avatar:        userAvatar,
 		quote:         userQuote,
 		location:      userFields['Location'],
@@ -359,13 +397,15 @@ async function loadUserFile(filepath, htmlRoot, opts) {
  *
  * Gives us everything for a Topic except its created_at timestamp.
  * We derive created_at from the first post in {@link loadTopicFile}.
- *
- * @param {string} filepath
- * @param {Document} htmlRoot
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadForumFile(filepath, htmlRoot, opts) {
-	const forumId = Number.parseInt(FORUM_FILE_REGEX.exec(filepath)[1]);
+async function loadForumFile(
+	filepath: string,
+	htmlRoot: Document,
+	opts: LoadOpts,
+): Promise<void> {
+	const forumId = Number.parseInt(FORUM_FILE_REGEX.exec(filepath)?.[1] ?? '');
+	assert(forumId, 'Failed to extract Forum ID');
+
 	const renderTime = stringToDate(extractRenderTime(htmlRoot));
 
 	const topicTable = htmlRoot.querySelector('table table:nth-child(2)');
@@ -380,12 +420,11 @@ async function loadForumFile(filepath, htmlRoot, opts) {
 	topicTableRows.shift(); // Ignore header row
 	topicTableRows.shift(); // Ignore moderator row
 
-	const topics = [];
-	for await (topicRow of topicTableRows) {
-		const topicData = extractTopicInfoFromRow(topicRow);
+	const topics: InitialTopic[] = [];
+	for await (const topicRow of topicTableRows) {
+		const rowInfo = extractTopicInfoFromRow(topicRow);
 
-		const authorName = topicData.authorName;
-		delete topicData.authorName;
+		const authorName = rowInfo.author.name;
 		const authorId   = await database.getUserIdByName(authorName);
 
 		// Topics listed on a Forum page have a "Started By" field. This field
@@ -398,12 +437,12 @@ async function loadForumFile(filepath, htmlRoot, opts) {
 		}
 
 		topics.push({
-			...topicData,
+			...rowInfo.topic,
 			forum_id:    forumId,
 			author_id:   authorId,
 			author_name: authorName,
-			created_at:  null, // We'll get this later from Posts.
 			mirrored_at: renderTime,
+			// We'll get created_at later from Posts.
 		});
 	}
 
@@ -414,29 +453,34 @@ async function loadForumFile(filepath, htmlRoot, opts) {
 	}
 }
 
+interface RowTopicInfo {
+	topic: Pick<Topic, 'id'|'name'|'views'|'pinned'|'locked'|'moved_from'>;
+	author: {
+		name: string;
+	};
+}
+
 /**
  * Extracts Topic info from a row of the Topic table on a Forum page.
  * Returns a partial Topic record, as well as the Topic author's name.
- *
- * @param {HTMLTableRowElement} topicRow
  */
-function extractTopicInfoFromRow(topicRow) {
+function extractTopicInfoFromRow(topicRow: HTMLTableRowElement): RowTopicInfo {
 	// Every Topic row has an icon. If the Topic is locked, this icon is
 	// different. Pinned Topics also have a little paper clip icon.
 	const images = topicRow.querySelectorAll('img');
-	const topicLocked = images.item(0).getAttribute('src').includes('locked');
-	const topicPinned = !!images.item(1)?.getAttribute('src').includes('clip');
+	const topicLocked = !!images.item(0)?.getAttribute('src')?.includes('locked');
+	const topicPinned = !!images.item(1)?.getAttribute('src')?.includes('clip');
 
 	// The first link in a row USUALLY contains both the Topic ID and name.
 	// In the rare case a Topic was moved, the first link will be the link to
 	// the Forum it was moved from, and the second has the ID and name.
 	const rowLinks = topicRow.querySelectorAll('a');
-	let topicLinkElem;
-	let topicMovedFrom;
-	if (FORUM_FILE_REGEX.test(rowLinks.item(0).getAttribute('href'))) {
+	let topicLinkElem: HTMLAnchorElement;
+	let topicMovedFrom: number | null;
+	if (FORUM_FILE_REGEX.test(rowLinks.item(0).getAttribute('href') ?? '')) {
 		topicLinkElem  = rowLinks.item(1);
 		topicMovedFrom = Number.parseInt(
-			FORUM_FILE_REGEX.exec(rowLinks.item(0).getAttribute('href'))[1]
+			FORUM_FILE_REGEX.exec(rowLinks.item(0).getAttribute('href')!)![1]
 		);
 	} else {
 		topicLinkElem  = rowLinks.item(0);
@@ -445,23 +489,38 @@ function extractTopicInfoFromRow(topicRow) {
 
 	const topicName = topicLinkElem.textContent;
 	const topicId   = Number.parseInt(
-		TOPIC_FILE_REGEX.exec(topicLinkElem.getAttribute('href'))[1]
+		TOPIC_FILE_REGEX.exec(topicLinkElem.getAttribute('href') ?? '')?.[1] ?? ''
 	);
+	assert(topicId, 'Failed to extract Topic ID');
+	assert(topicName, 'Failed to extract Topic name');
 
 	// span elements contain author name, total posts, and total views.
 	const topicRowCells = topicRow.querySelectorAll('td');
-	const authorName = topicRowCells.item(2).textContent.trim();
-	const topicViews = Number.parseInt(topicRowCells.item(4).textContent);
+	const authorName = topicRowCells.item(2).textContent?.trim();
+	const topicViews = Number.parseInt(topicRowCells.item(4).textContent ?? '');
+	assert(topicViews != null, 'Failed to extract Topic view count');
 
 	return {
-		id:         topicId,
-		name:       topicName,
-		views:      topicViews,
-		pinned:     topicPinned,
-		locked:     topicLocked,
-		moved_from: topicMovedFrom,
-		authorName: authorName, // Not a database column, but needed for lookup.
-	}
+		author: {
+			name: authorName,
+		},
+		topic: {
+			id:         topicId,
+			name:       topicName,
+			views:      topicViews,
+			pinned:     topicPinned,
+			locked:     topicLocked,
+			moved_from: topicMovedFrom,
+		},
+	};
+}
+
+type RowPostInfo = Pick<Post, 'id'|'author_id'|'content'>;
+interface RowPostUserInfo {
+	user: UserPatch;
+	post: RowPostInfo & {
+		createdStr: string; // Return as string we resolve later.
+	};
 }
 
 /**
@@ -473,15 +532,16 @@ function extractTopicInfoFromRow(topicRow) {
  * The Topic's created_at time is derived from the first post in the Topic.
  * User quotes are rendered in Topics, even if they don't have an avatar image.
  * User special strings are also rendered in Topics.
- *
- * @param {string} filepath
- * @param {Document} htmlRoot
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function loadTopicFile(filepath, htmlRoot, opts) {
+async function loadTopicFile(
+	filepath: string,
+	htmlRoot: Document,
+	opts: LoadOpts,
+): Promise<void> {
 	const topicMatch = TOPIC_FILE_REGEX.exec(filepath);
-	const topicId     = Number.parseInt(topicMatch[1]);
-	const isFirstPage = !topicMatch[2] || topicMatch[2] === '1';
+	const topicId     = Number.parseInt(topicMatch?.[1] ?? '');
+	const isFirstPage = !topicMatch?.[2] || topicMatch[2] === '1';
+	assert(topicId, 'Failed to extract Topic ID');
 
 	const renderTimeStr = extractRenderTime(htmlRoot);
 	const renderTime    = stringToDate(renderTimeStr);
@@ -505,32 +565,32 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 	//
 	// Also, since posts are the only sure place to get a User's special text
 	// and quote, we'll grab those too.
-	const posts = [];
-	const usersUpdateData = [];
-	let firstPost;
+	let firstPost: Post | null = null;
+	const posts: Post[] = [];
+	const usersUpdateData: UserPatch[] = [];
 	for (let i = 0; i < postRows.length; i += 2) {
 		const postInfo = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
 
-		const createdStr = postInfo.post.createdStr;
-		delete postInfo.post.createdStr;
-		postInfo.post.created_at = stringToDate(createdStr, renderTimeStr);
+		// This is going to have createdStr in it still, but we ignore the value.
+		const post: Post = {
+			...postInfo.post,
+			created_at: stringToDate(postInfo.post.createdStr, renderTimeStr),
+			topic_id: topicId,
+			mirrored_at: renderTime,
+		};
 
 		// Derive Topic created_at timestamp from first Post of first page.
 		// Also (possibly temporarily) use the first Post's author as the Topic
 		// author if we failed the User lookup at the Forum stage.
 		if (isFirstPage && i === 0) {
-			firstPost = postInfo.post;
+			firstPost = post;
 		}
 
 		usersUpdateData.push(postInfo.user);
-		posts.push({
-			...postInfo.post,
-			topic_id:    topicId,
-			mirrored_at: renderTime,
-		});
+		posts.push(post);
 	}
 
-	const topicUpdateData = {
+	const topicUpdateData: TopicPatch = {
 		id:         topicId,
 		author_id:  firstPost?.author_id,
 		created_at: firstPost?.created_at,
@@ -550,49 +610,55 @@ async function loadTopicFile(filepath, htmlRoot, opts) {
 /**
  * Extracts Post info from two subsequent rows of the Post table on a Topic page.
  * Also gets User quotes and possible special fields.
- *
- * @param {HTMLTableRowElement} postRow
- * @param {HTMLTableRowElement} idRow
  */
-function extractPostInfoFromRows(postRow, idRow) {
+function extractPostInfoFromRows(
+	postRow: HTMLTableRowElement,
+	idRow: HTMLTableRowElement,
+): RowPostUserInfo {
 	// Post rows have two cells -- the user info, and the post content.
 	const userNode = postRow.querySelector('td');
 
 	// First link contains link to author's User page, and thus, User's ID.
 	const authorId = Number.parseInt(USER_FILE_REGEX.exec(
-		userNode.querySelector('a').getAttribute('href')
-	)[1]);
+		userNode?.querySelector('a')?.getAttribute('href') ?? ''
+	)?.[1] ?? '');
+	assert(authorId, 'Failed to extract Author ID');
 
 	// Avatar quote has a unique class "avatar" we can select on.
-	const userQuote = userNode.querySelector('span.avatar')?.textContent || null;
+	const userQuote = userNode?.querySelector('span.avatar')?.textContent || null;
 
 	// User special info can be an image (Dennis' moderator badge) or a text
 	// node (Maniac's "helpful user" label). There's not a great way to
 	// select this, so just grab whatever comes after the User link that isn't
 	// the User join date (if anything).
-	const specialTextNode = userNode.childNodes.item(6);
-	const specialImgNode  = userNode.childNodes.item(7);
+	const specialTextNode = userNode?.childNodes.item(6);
+	const specialImgNode  = userNode?.childNodes.item(7) as HTMLImageElement | undefined;
 
 	// Yes, this is kind of dumb, but it'll help catch other specials.
-	let userSpecial = null;
-	if (specialTextNode.textContent.trim().length > 0) {
+	let userSpecial: string | null = null;
+	if ((specialTextNode?.textContent?.trim().length ?? 0) > 0) {
 		// Some text specials are split across several lines (i.e. nodes).
-		const textNodes = [];
+		const textNodes: ChildNode[] = [];
 		for (
-			let curNode = specialTextNode;
-			!curNode.textContent.trim().startsWith('Joined');
-			curNode = curNode.nextSibling
+			let curNode: ChildNode | null = specialTextNode!;
+			(
+				// TODO this might actually break stuff if some nodes are null...
+				curNode &&
+				!curNode.textContent?.trim().startsWith('Joined') &&
+				textNodes.length < 10 // Avoid infinite loops
+			);
+			curNode = curNode?.nextSibling
 		) {
 			textNodes.push(curNode);
 		}
 
 		userSpecial = textNodes
-			.map(node => node.textContent.trim())
+			.map(node => node.textContent?.trim())
 			.filter(text => text)
 			.join('\n');
 	}
-	else if (specialImgNode && specialImgNode.nodeName === 'IMG') {
-		if (specialImgNode.getAttribute('src').includes('moderator')) {
+	else if (specialImgNode?.nodeName === 'IMG') {
+		if (specialImgNode.getAttribute('src')?.includes('moderator')) {
 			userSpecial = 'moderator';
 		} else {
 			throw new Error(
@@ -603,20 +669,24 @@ function extractPostInfoFromRows(postRow, idRow) {
 
 	// Post time always appears first as a "strong" tag.
 	const postCreatedStr = POST_TIME_REGEX.exec(
-		postRow.querySelector('strong').textContent
-	)[1];
+		postRow.querySelector('strong')?.textContent ?? ''
+	)?.[1];
+	assert(postCreatedStr, 'Failed to extract Post creation time');
 
 	// Post content is easy. It appears in a div with a unique ID.
 	// Posts are formatted using embedded HTML. Users could edit this HTML
 	// directly when editing their post. There's not really any good way
 	// to sanitize this without losing information, so just keep it.
-	const postContent = postRow.querySelector('div#messagearea').innerHTML;
+	// FIXME this breaks on posts with manually-edited tags (like Arby's </div id=...> thing in topicID=12627)
+	const postContent = postRow.querySelector('div#messagearea')?.innerHTML;
+	//assert(postContent, 'Failed to extract Post content');
 
 	// The button for replying to a post contains a link with the Post's ID.
 	const replyLinkNode = idRow.querySelector('a');
 	const postId = Number.parseInt(
-		POST_ID_REGEX.exec(replyLinkNode.getAttribute('href'))[1]
+		POST_ID_REGEX.exec(replyLinkNode?.getAttribute('href') ?? '')?.[1] ?? ''
 	);
+	assert(postId, 'Failed to extract Post ID');
 
 	return {
 		user: {
@@ -628,8 +698,8 @@ function extractPostInfoFromRows(postRow, idRow) {
 			id:          postId,
 			author_id:   authorId,
 			content:     postContent,
-			createdStr:  postCreatedStr, // Return as string we resolve later.
-		}
+			createdStr:  postCreatedStr,
+		},
 	};
 }
 
@@ -643,16 +713,14 @@ function extractPostInfoFromRows(postRow, idRow) {
  *
  * @param {Document} htmlRoot
  */
-function extractRenderTime(htmlRoot) {
+function extractRenderTime(htmlRoot: Document): string {
 	const tables = htmlRoot.querySelectorAll('table');
 	const timeTable = tables.item(tables.length - 2);
 
-	const match = RENDER_TIME_REGEX.exec(timeTable.textContent);
-	if (match) {
-		return match[1];
-	}
+	const match = RENDER_TIME_REGEX.exec(timeTable.textContent ?? '');
+	assert(match, 'Failed to extract mirror time');
 
-	throw new Error('Failed to extract mirror time');
+	return match[1];
 }
 
 /**
@@ -665,15 +733,12 @@ function extractRenderTime(htmlRoot) {
  * All dates rendered in the HTML are relative to the timezone of the server
  * that requested the HTML. This includes dates like "Today @ <time>".
  *
- * @param {string} date_str
- * @param {string} reference_date date string (usually from
- *   {@link extractRenderTime}) to resolve dates like "Today @ <time>".
+ * @param reference_date date string (usually from {@link extractRenderTime})
+ *     to resolve dates like "Today @ <time>".
  */
-function stringToDate(date_str, reference_date) {
+function stringToDate(date_str: string, reference_date?: string): Date {
 	if (date_str.startsWith('Today') || date_str.startsWith('Yesterday')) {
-		if (!reference_date) {
-			throw new Error(`No reference given to resolve date: ${date_str}`);
-		}
+		assert(reference_date, `No reference given to resolve date: ${date_str}`);
 
 		// Page mirror time with timezone baked in
 		let datetime = stringToDateInner(reference_date);
@@ -710,11 +775,9 @@ function stringToDate(date_str, reference_date) {
  *
  * Dates can come in a few formats, so find one that matches
  * (see {@link TIME_FORMATS}).
- *
- * @param {string} date_str
  */
-function stringToDateInner(date_str) {
-	for (fmt of TIME_FORMATS) {
+function stringToDateInner(date_str: string): DateTime {
+	for (const fmt of TIME_FORMATS) {
 		const dt = DateTime.fromFormat(date_str, fmt, { zone: MIRROR_TIMEZONE });
 		if (dt.isValid) {
 			return dt;
@@ -770,10 +833,8 @@ function stringToDateInner(date_str) {
  *             been renamed to Donut. In practice, there are only a few
  *             instances of this, and a manual review of all of them determined
  *             that Asshole was always a deleted User.
- *
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function cleanInvalidTopicAuthors(opts) {
+async function cleanInvalidTopicAuthors(opts: LoadOpts): Promise<void> {
 	const mismatched = await database.getMismatchedTopicAuthors();
 
 	// We can detect all of the above cases with this structure:
@@ -820,10 +881,8 @@ async function cleanInvalidTopicAuthors(opts) {
 /**
  * Despite my best efforts to catch every edge case automatically, there are
  * a few weird, one-off things. This function manually handles them.
- *
- * @param {Object<string, any>} opts See {@link load}.
  */
-async function applyManualFixes(opts) {
+async function applyManualFixes(opts: LoadOpts): Promise<void> {
 	// Topic Author Case 1 exceptions:
 	// These Users are deleted, but happened to make more than one Topic where
 	// the same, undeleted User responded first.
@@ -837,7 +896,3 @@ async function applyManualFixes(opts) {
 		await database.clearAuthorIdForTopicsStartedBy(manuallyClearAuthors);
 	}
 }
-
-module.exports = {
-	load,
-};

@@ -14,7 +14,7 @@
   "scripts": {
     "knex": "npx knex --knexfile database/knexfile.js",
     "start": "npx ts-node ./scripts/start_server.ts",
-    "mirror": "npx ts-node ./script/import_mirror.ts",
+    "mirror": "npx ts-node ./scripts/import_mirror.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -27,6 +27,8 @@
   "author": "Mimickal <mimickal.dev@gmail.com>",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@types/jsdom": "^21.1.1",
+    "@types/luxon": "^3.3.0",
     "@types/minimist": "^1.2.2",
     "@types/node": "^20.2.5",
     "@types/polka": "^0.5.4",

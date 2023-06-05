@@ -2,8 +2,7 @@ import { basename } from 'path';
 
 import minimist from 'minimist';
 
-// @ts-ignore this error will go away when this is ported to TS
-import loader from './loader';
+import { load } from './loader';
 const { version } = require('../package.json');
 
 const argv = minimist(process.argv.slice(2), {
@@ -51,7 +50,7 @@ if (argv.version) {
 
 (async function () {
 	for await (const file of argv.files) {
-		await loader.load(file, {
+		await load(file, {
 			print_json: argv.json,
 		});
 	}

@@ -66,13 +66,14 @@ exports.up = async function(knex) {
 
 	await knex.schema.createTable(STATS, table => {
 		table.string   ('name'       ).primary();
-		table.string   ('value'      ).notNullable();
-		table.timestamp('mirrored_at').notNullable();
+		table.integer  ('value'      ).notNullable();
+		table.timestamp('mirrored_at').nullable();
 		table.comment(
-			'These values are extracted from the stats rendered out on the ' +
-			'forum home page. They ARE NOT derived from posts and users we ' +
-			'scrape from the mirror, so they could be used to verify the ' +
-			'completeness of the mirror and data extraction.'
+			'Most of these values are extracted from the stats rendered out ' +
+			'on the forum home page. They ARE NOT derived from posts and ' +
+			'users we scrape from the mirror, so they could be used to verify ' +
+			'the completeness of the mirror and data extraction.' +
+			'This table is also used to track stats for the mirror server.'
 		);
 	});
 
