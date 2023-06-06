@@ -53,6 +53,7 @@ const TIME_FORMATS = [
 const FORUM_ID_REGEX  = /forumid=(\d+)/i;
 const POST_ID_REGEX   = /replyid=(\d+)/i;
 const POST_TIME_REGEX = /Posted: ([\w,:@ ]+)/;
+const POST_CONTENT_REGEX = /<div class="mesagearea" id="messagearea">(.*?)<\/div>/;
 
 
 
@@ -139,7 +140,7 @@ async function loadFile(
 
 	console.log(basename(filepath));
 
-	const htmlContent = await readFile(filepath, { encoding: 'utf-8' });
+	const htmlContent = await readFileContent(filepath);
 	const document = new JSDOM(htmlContent).window.document;
 
 	// Some pages in the mirror are empty stubs with just the common header.
@@ -569,12 +570,15 @@ async function loadTopicFile(
 	const posts: Post[] = [];
 	const usersUpdateData: UserPatch[] = [];
 	for (let i = 0; i < postRows.length; i += 2) {
-		const postInfo = extractPostInfoFromRows(postRows[i], postRows[i + 1]);
+		const postInfo = await extractPostInfoFromRows(
+			filepath, postRows[i], postRows[i + 1],
+		);
 
-		// This is going to have createdStr in it still, but we ignore the value.
+		const createdAt = stringToDate(postInfo.post.createdStr, renderTimeStr);
+		delete postInfo.post.createdStr;
 		const post: Post = {
 			...postInfo.post,
-			created_at: stringToDate(postInfo.post.createdStr, renderTimeStr),
+			created_at: createdAt,
 			topic_id: topicId,
 			mirrored_at: renderTime,
 		};
@@ -611,10 +615,11 @@ async function loadTopicFile(
  * Extracts Post info from two subsequent rows of the Post table on a Topic page.
  * Also gets User quotes and possible special fields.
  */
-function extractPostInfoFromRows(
+async function extractPostInfoFromRows(
+	filepath: string,
 	postRow: HTMLTableRowElement,
 	idRow: HTMLTableRowElement,
-): RowPostUserInfo {
+): Promise<RowPostUserInfo> {
 	// Post rows have two cells -- the user info, and the post content.
 	const userNode = postRow.querySelector('td');
 
@@ -642,7 +647,6 @@ function extractPostInfoFromRows(
 		for (
 			let curNode: ChildNode | null = specialTextNode!;
 			(
-				// TODO this might actually break stuff if some nodes are null...
 				curNode &&
 				!curNode.textContent?.trim().startsWith('Joined') &&
 				textNodes.length < 10 // Avoid infinite loops
@@ -673,20 +677,24 @@ function extractPostInfoFromRows(
 	)?.[1];
 	assert(postCreatedStr, 'Failed to extract Post creation time');
 
-	// Post content is easy. It appears in a div with a unique ID.
-	// Posts are formatted using embedded HTML. Users could edit this HTML
-	// directly when editing their post. There's not really any good way
-	// to sanitize this without losing information, so just keep it.
-	// FIXME this breaks on posts with manually-edited tags (like Arby's </div id=...> thing in topicID=12627)
-	const postContent = postRow.querySelector('div#messagearea')?.innerHTML;
-	//assert(postContent, 'Failed to extract Post content');
-
 	// The button for replying to a post contains a link with the Post's ID.
 	const replyLinkNode = idRow.querySelector('a');
 	const postId = Number.parseInt(
 		POST_ID_REGEX.exec(replyLinkNode?.getAttribute('href') ?? '')?.[1] ?? ''
 	);
 	assert(postId, 'Failed to extract Post ID');
+
+	// Post content is (usually) easy. It appears in a div with a unique ID.
+	// Posts are formatted using embedded HTML. Users could edit this HTML
+	// directly when editing their post. There's not really any good way
+	// to sanitize this without losing information, so just keep it.
+	let postContent = postRow.querySelector('div#messagearea')?.innerHTML;
+
+	// We can end up with a defined but empty string for malformed posts.
+	if (!postContent) {
+		postContent = await extractPostContentAlt(filepath, postId);
+	}
+	assert(postContent, 'Failed to extract Post content');
 
 	return {
 		user: {
@@ -701,6 +709,48 @@ function extractPostInfoFromRows(
 			createdStr:  postCreatedStr,
 		},
 	};
+}
+
+/**
+ * An alternative way to grab a Post's content without relying on HTML tags.
+ *
+ * Sometimes users would mangle the HTML in their posts when editing.
+ * For example, in topidID=12627:
+ * `<div class="mesagearea" id="messagearea"></div id=quote>...`
+ * This confuses our HTML parser into thinking there is no post content at all,
+ * so we need an alternative way to grab this post content.
+ *
+ * Scan the file line-by-line. Save the most recent post content line we find,
+ * and when we find the reply link with the matching Post ID, parse the content
+ * out of that line.
+ */
+async function extractPostContentAlt(
+	filepath: string,
+	postId: number,
+): Promise<string | null> {
+	const htmlContent = await readFileContent(filepath);
+	const htmlLines = htmlContent.split('\n');
+
+	let currentContent: string | null = null;
+	for (const line of htmlLines) {
+
+		const extractedContent = POST_CONTENT_REGEX.exec(line)?.[1];
+		if (extractedContent) {
+			currentContent = extractedContent;
+		}
+
+		const extractedId = Number.parseInt(POST_ID_REGEX.exec(line)?.[1] ?? '');
+		if (extractedId === postId) {
+			return currentContent;
+		}
+	};
+
+	return null;
+}
+
+/** Thin wrapper around readFile that keeps encoding consistent. */
+async function readFileContent(filepath: string): Promise<string> {
+	return await readFile(filepath, { encoding: 'utf-8' });
 }
 
 /**
