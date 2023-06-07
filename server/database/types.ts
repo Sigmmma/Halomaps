@@ -34,7 +34,7 @@ export type Forum = Mirrored & {
 }
 
 export type Stat = Mirrored & {
-	name: string;
+	name: keyof ForumStats;
 	value: number;
 }
 
@@ -65,4 +65,9 @@ export interface ForumStats {
 	posts: number;
 	most_users_num: number;
 	most_users_at: Date;
+}
+
+export interface PostAndUser {
+	post: Post;
+	user: User;
 }

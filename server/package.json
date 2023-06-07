@@ -32,6 +32,7 @@
     "@types/minimist": "^1.2.2",
     "@types/node": "^20.2.5",
     "@types/polka": "^0.5.4",
+    "date-fns": "^2.30.0",
     "jsdom": "^21.1.0",
     "knex": "^2.4.1",
     "luxon": "^3.2.1",

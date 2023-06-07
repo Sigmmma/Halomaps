@@ -288,13 +288,13 @@ async function loadHomeFile(
 	const renderTime   = stringToDate(renderTimeStr);
 	const mostUsersAt  = stringToDate(match.at(5)!, renderTimeStr);
 
-	const statsData: Stat[] = [
+	const statsData: Stat[] = Array.of<Omit<Stat, 'mirrored_at'>>(
 		{ name: 'users',          value: Number.parseInt(match.at(1)!) },
 		{ name: 'topics',         value: Number.parseInt(match.at(2)!) },
 		{ name: 'posts',          value: Number.parseInt(match.at(3)!) },
 		{ name: 'most_users_num', value: Number.parseInt(match.at(4)!) },
 		{ name: 'most_users_at',  value: mostUsersAt.valueOf() },
-	].map(row => ({ ...row, mirrored_at: renderTime }) );
+	).map<Stat>(row => ({ ...row, mirrored_at: renderTime }) );
 
 	if (opts.print_json) {
 		console.log('Category Sort Update', categories);
