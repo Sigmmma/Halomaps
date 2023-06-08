@@ -85,6 +85,16 @@ export async function getLatestPost(forumId?: number): Promise<PostAndUser | und
 }
 
 /**
+ * Gets the most recent registered User.
+ */
+export async function getNewestUser(): Promise<User> {
+	const user = await knex<User>(Table.USERS)
+		.first()
+		.orderBy('joined_at', 'desc');
+	return parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at']);
+}
+
+/**
  * Gets the list of all moderators. Dennis was the only moderator, so this will
  * always be a list containing Dennis and no one else.
  *

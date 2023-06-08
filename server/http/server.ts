@@ -106,9 +106,14 @@ async function getHome(request: Request): Promise<HomeData> {
 		category.forums.push(forum);
 	});
 
+	const newestPost = await database.getLatestPost();
+	const newestUser = await database.getNewestUser();
+
 	return {
 		categories,
 		moderators,
+		newestPost,
+		newestUser,
 		stats,
 	};
 }

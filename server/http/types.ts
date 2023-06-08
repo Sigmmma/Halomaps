@@ -11,5 +11,7 @@ export type CategoryWithForum = Category & {
 export type HomeData = {
 	categories: CategoryWithForum[];
 	moderators: User[];
+	newestPost: PostAndUser;
+	newestUser: User;
 	stats: ForumStats;
 }
