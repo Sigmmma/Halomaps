@@ -1,6 +1,7 @@
 export const Design = {
 	BAR_DARK:      image('design/darkbg.gif'),
 	BAR_LIGHT:     image('design/lightbg.gif'),
+	LOADING:       image('design/loading.gif'),
 	NAV_BG:        image('design/mbg3.gif'),
 	NAV_BG_BRIGHT: image('design/mbg4.gif'),
 	TOP_LOGO:      image('design/toplogo_forum.gif'),
