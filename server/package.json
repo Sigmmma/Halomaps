@@ -27,11 +27,13 @@
   "author": "Mimickal <mimickal.dev@gmail.com>",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@types/cors": "^2.8.13",
     "@types/jsdom": "^21.1.1",
     "@types/luxon": "^3.3.0",
     "@types/minimist": "^1.2.2",
     "@types/node": "^20.2.5",
     "@types/polka": "^0.5.4",
+    "cors": "^2.8.5",
     "date-fns": "^2.30.0",
     "jsdom": "^21.1.0",
     "knex": "^2.4.1",

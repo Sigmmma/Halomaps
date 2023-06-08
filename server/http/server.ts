@@ -1,3 +1,4 @@
+import cors from 'cors';
 import { RequestHandler, Request } from 'express'; // @types/express from polka
 import { ServerResponse } from 'http';
 import polka from 'polka';
@@ -26,6 +27,8 @@ const info = require('../package.json');
  */
 const server = polka();
 export default server;
+
+server.use(cors());
 
 // Middleware for logging requests
 server.use('/', (request, _response, next) => {
