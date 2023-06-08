@@ -8,13 +8,16 @@ export const Design = {
 };
 
 export const Icons = {
+	FORUM:    image('icons/icon_newposts.gif'),
 	HOME:     image('icons/icon_home.gif'),
+	LOCK:     image('icons/icon_lock.gif'),
 	LOGIN:    image('icons/icon_login.gif'),
 	MEMBERS:  image('icons/icon_memberlist.gif'),
 	RECENT:   image('icons/icon_recent.gif'),
 	REGISTER: image('icons/icon_register.gif'),
 	SEARCH:   image('icons/icon_search.gif'),
 	TOP:      image('icons/icon_totop.gif'),
+	TOPIC_JUMP: image('icons/icon_mini_topic.gif'),
 };
 
 function image(staticPath: string): string {

@@ -4,6 +4,7 @@ import { createUseStyles } from 'react-jss';
 
 import FullHeader from './components/Header';
 import Footer from './components/Footer';
+import Home from './pages/Home';
 
 const useGlobalStyles = createUseStyles({
 	'@global': {
@@ -28,6 +29,7 @@ function App(): JSX.Element {
 	useGlobalStyles();
 	return <>
 		<FullHeader />
+		<Home />
 		<Footer date={new Date()} duration={12345} />
 	</>;
 }
