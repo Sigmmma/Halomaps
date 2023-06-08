@@ -7,6 +7,8 @@ import { Design, Icons } from '../images';
 const useTableStyles = createUseStyles({
 	blue: {
 		backgroundColor: '#C6DDF0',
+		fontSize: '10px',
+		textAlign: 'center',
 	},
 	header: {
 		backgroundImage: `url(${Design.BAR_DARK})`,
@@ -14,10 +16,15 @@ const useTableStyles = createUseStyles({
 		fontWeight: 'bold',
 		height: '18px',
 		textAlign: 'center',
+		paddingBottom: '0px',
+		paddingTop: '2px',
 		whiteSpace: 'nowrap',
 	},
-	table: {
+	normal: {
 		backgroundColor: '#F2F2F2',
+	},
+	table: {
+		backgroundColor: '#FFFFFF',
 		borderColor: 'black',
 		borderWidth: '1px',
 		borderStyle: 'solid',
@@ -45,7 +52,7 @@ export function Table<T>({
 }: TableProps<T>): JSX.Element {
 	const styles = useTableStyles();
 	return (
-		<table cellSpacing={1} className={styles.table}>
+		<table cellSpacing={1} cellPadding={1} className={styles.table}>
 			<TableHeader columns={columns} />
 			<TableBody columns={columns} rows={rows} />
 		</table>
@@ -116,7 +123,7 @@ function TableRow<T>({
 		<tr>
 			{columns.map((column, idx) => (
 				<td
-					className={column.blueBg ? styles.blue : undefined}
+					className={column.blueBg ? styles.blue : styles.normal}
 					key={idx}
 					style={{ width: column.width }}
 				>
@@ -165,6 +172,8 @@ const useSeparatorStyles = createUseStyles({
 	separator: {
 		backgroundImage: `url(${Design.BAR_LIGHT})`,
 		height: '18px',
+		paddingTop: '2px',
+		paddingBottom: '0px',
 		verticalAlign: 'middle',
 	},
 	topLink: {
