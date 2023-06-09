@@ -3,6 +3,7 @@ import { AsyncState } from 'react-use/lib/useAsyncFn';
 
 import { Design } from '../images';
 import { createUseStyles } from 'react-jss';
+import { PaneType, TextPane } from './Pane';
 
 type AsyncContentProps<T> = {
 	state: AsyncState<T>;
@@ -10,17 +11,6 @@ type AsyncContentProps<T> = {
 }
 
 const useStyles = createUseStyles(() => ({
-	error: {
-		backgroundColor: 'pink',
-		borderColor: 'red',
-		borderStyle: 'solid',
-		borderWidth: '1px',
-		marginLeft: 'auto',
-		marginRight: 'auto',
-		marginTop: '10px',
-		padding: '5px',
-		width: '60ch',
-	},
 	icon: {
 		display: 'block',
 		marginLeft: 'auto',
@@ -42,10 +32,11 @@ export default function AsyncContent<T>({
 
 // TODO we'll want to display things like HTTP error codes
 function RenderedError({ error }: { error: Error }): JSX.Element {
-	const styles = useStyles();
 	return (
-		<div className={styles.error}>
-			{error.name}: {error.message}
-		</div>
+		<TextPane
+			title={error.name}
+			type={PaneType.ERROR}
+			text={error.message}
+		/>
 	);
 }
