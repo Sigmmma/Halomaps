@@ -30,7 +30,15 @@ module.exports = {
 	output: {
 		filename: '[name].js',
 		path: path.resolve(__dirname, 'dist'),
+		publicPath: '/index.cfm',
 	},
 	mode: process.argv.NODE_ENV === 'production' ? 'production' : 'development',
 	devtool: 'inline-source-map',
+	devServer: {
+		// Need "server" to handle initial redirect so we can actually load React.
+		// See: https://ui.dev/react-router-cannot-get-url-refresh
+		historyApiFallback: {
+			index: '/index.cfm',
+		},
+	},
 };
