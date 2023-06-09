@@ -10,6 +10,7 @@ import {
 
 import FullHeader from './components/Header';
 import Footer from './components/Footer';
+import { Pane, PaneType } from './components/Pane';
 import NotFound from './pages/404';
 import Home from './pages/Home';
 
@@ -36,16 +37,16 @@ const ROUTER = createBrowserRouter([
 ]);
 
 const QUERY_ELEMS: Record<string, JSX.Element> = {
-	forgotpassword: <></>,
-	forum:          <></>,
+	forgotpassword: <Todo />,
+	forum:          <Todo />,
 	home:           <Home />,
-	login:          <></>,
-	members:        <></>,
-	recent:         <></>,
-	register:       <></>,
-	search:         <></>,
-	topic:          <></>,
-	userinfo:       <></>,
+	login:          <Todo />,
+	members:        <Todo />,
+	recent:         <Todo />,
+	register:       <Todo />,
+	search:         <Todo />,
+	topic:          <Todo />,
+	userinfo:       <Todo />,
 };
 
 function App(): JSX.Element {
@@ -64,4 +65,15 @@ function QueryRouter(): JSX.Element {
 	return page
 		? QUERY_ELEMS[page] ?? <NotFound />
 		: <Navigate to='/index.cfm?page=home' />;
+}
+
+// TODO remove this once all pages are done
+function Todo(): JSX.Element {
+	return (
+		<Pane
+			title='Page Under Construction'
+			type={PaneType.WARNING}
+			width='300px'
+		/>
+	);
 }

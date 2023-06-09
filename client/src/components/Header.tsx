@@ -118,13 +118,12 @@ function NavBar(): JSX.Element {
 //******************************************************************************
 
 const CONTROL_ITEMS = [
-	// TODO need to add actual URLs
-	{ label: 'Home',         icon: Icons.HOME,     url: '' },
-	{ label: 'Search',       icon: Icons.SEARCH,   url: '' },
-	{ label: 'Register',     icon: Icons.REGISTER, url: '' },
-	{ label: 'Login',        icon: Icons.LOGIN,    url: '' },
-	{ label: 'Member List',  icon: Icons.MEMBERS,  url: '' },
-	{ label: 'Recent Posts', icon: Icons.RECENT,   url: '' },
+	{ label: 'Home',         icon: Icons.HOME,     url: 'index.cfm?page=home'     },
+	{ label: 'Search',       icon: Icons.SEARCH,   url: 'index.cfm?page=search'   },
+	{ label: 'Register',     icon: Icons.REGISTER, url: 'index.cfm?page=register' },
+	{ label: 'Login',        icon: Icons.LOGIN,    url: 'index.cfm?page=login'    },
+	{ label: 'Member List',  icon: Icons.MEMBERS,  url: 'index.cfm?page=members'  },
+	{ label: 'Recent Posts', icon: Icons.RECENT,   url: 'index.cfm?page=recent'   },
 ];
 
 const useControlStyles = createUseStyles({
