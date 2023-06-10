@@ -53,6 +53,7 @@ const ROUTER = createBrowserRouter([
 ]);
 
 const QUERY_ELEMS: Record<string, JSX.Element> = {
+	archiveinfo:    <Todo />,
 	forgotpassword: <Todo />,
 	forum:          <Todo />,
 	home:           <Home />,

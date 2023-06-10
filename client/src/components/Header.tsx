@@ -18,6 +18,14 @@ export default function FullHeader(): JSX.Element {
 const HEADER_BG_COLOR = '#757F8D';
 const HEADER_HEIGHT = '73px'; // Matches Design.TOP_LOGO
 const useHeaderStyles = createUseStyles({
+	disclaimer: {
+		color: 'orange',
+		float: 'right',
+		fontSize: '12px',
+		marginRight: '-35px',
+		marginTop: '20px',
+		textAlign: 'right',
+	},
 	header: {
 		backgroundColor: HEADER_BG_COLOR,
 		backgroundImage: `url(${Design.TOP_LOGO})`,
@@ -32,8 +40,8 @@ const useHeaderStyles = createUseStyles({
 		fontSize: '1.6em',
 		height: HEADER_HEIGHT,
 		margin: 0,
-		paddingTop: '10px',
 		paddingRight: '50px',
+		paddingTop: '10px',
 		width: '550px',
 	},
 });
@@ -42,10 +50,15 @@ function Header(): JSX.Element {
 	const styles = useHeaderStyles();
 	return (
 		<div className={styles.header}>
-			<span className={styles.text}>
+			<div className={styles.text}>
 				A Community discussion forum for Halo Custom Edition,
 				Halo 2 Vista, Portal and Halo Machinima
-			</span>
+
+				<a
+					className={styles.disclaimer}
+					href='/index.cfm?page=archiveinfo'
+				>The Community Archive</a>
+			</div>
 		</div>
 	);
 }

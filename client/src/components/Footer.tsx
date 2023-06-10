@@ -9,18 +9,18 @@ interface FooterProps {
 
 const useStyles = createUseStyles({
 	bar: {
+		backgroundColor: '#F2F2F2',
 		borderColor: '#C6DDF0',
 		borderStyle: 'solid',
 		borderWidth: '1px',
-		backgroundColor: '#F2F2F2',
-		marginTop: '10px',
+		marginTop: '15px',
 		padding: '2px',
 	},
 	duration: {
 		color: 'gray',
 		float: 'right',
-		fontSize: '10px',
 		fontFamily: 'verdana',
+		fontSize: '10px',
 		paddingTop: '1px',
 	},
 	link: {
@@ -28,7 +28,7 @@ const useStyles = createUseStyles({
 		fontWeight: 'bold',
 		marginTop: '2px',
 		textAlign: 'center',
-	}
+	},
 });
 
 export default function Footer({
