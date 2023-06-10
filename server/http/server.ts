@@ -4,7 +4,12 @@ import { ServerResponse } from 'http';
 import polka from 'polka';
 
 import * as database from '../database/server_fetch';
-import { CategoryWithForum, ForumWithPost, HomeData } from './types';
+import {
+	CategoryWithForum,
+	ForumInfo,
+	ForumWithPost,
+	HomeData,
+} from './types';
 const info = require('../package.json');
 
 /**
@@ -36,11 +41,13 @@ server.use('/', (request, _response, next) => {
 	next();
 });
 
-const ID_NAME = 'categoryId';
+const CATEGORY_ID = 'categoryId';
+const FORUM_ID = 'forumId';
 
+server.get(`/forum/:${FORUM_ID}`, wrapHandler(getForum));
+server.get(`/forum/:${FORUM_ID}/posts`, wrapHandler(getForumTopics));
+server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
 server.get('/info', wrapHandler(getInfo));
-server.get(`/home/:${ID_NAME}?`, wrapHandler(getHome));
-
 
 /**
  * Return info for AGPL compliance.
@@ -65,13 +72,7 @@ function getInfo(): string {
  *   - index.cfm?page=home&category=1
  */
 async function getHome(request: Request): Promise<HomeData> {
-	let categoryId: number | undefined = request.params[ID_NAME]
-		? Number.parseInt(request.params[ID_NAME])
-		: undefined;
-
-	if (Number.isNaN(categoryId)) {
-		throw new RequestError(400, `${ID_NAME} must be a number`);
-	}
+	const categoryId = getNumberParam(request, CATEGORY_ID);
 
 	// Comes sorted from the database.
 	const categories: CategoryWithForum[] = await database.getCategories(categoryId);
@@ -140,10 +141,31 @@ async function getRecent(request: Request) {
 }
 
 /**
+ * Fetches the data needed to render a Forum page, other than Topics.
+ * For Topics, see {@link getForumTopics}.
  *
+ * Reference:
+ *   - index.cfm?forum&forumID=4
+ *   - index.cfm?forum&forumID=4&start=51
  */
-async function getForum(request: Request) {
-	return 'TODO';
+async function getForum(request: Request): Promise<ForumInfo> {
+	const forumId = getNumberParam(request, FORUM_ID);
+
+	const forum = await database.getForum(forumId);
+	if (!forum) {
+		throw new RequestError(404, `No Forum with ID ${forumId}`);
+	}
+
+	const category = (await database.getCategories(forum.category_id))[0];
+	const moderators = await database.getModerators();
+	const topics = await database.getTopicCount(forumId);
+
+	return {
+		category,
+		forum,
+		moderators,
+		topics,
+	};
 }
 
 /**
@@ -167,6 +189,17 @@ class RequestError extends Error {
 		super(message);
 		this.code = code;
 	}
+}
+
+/** Extracts, parses, and validates a numerical query parameter. */
+function getNumberParam(request: Request, param: string): number {
+	const value = Number.parseInt(request.params[param]);
+
+	if (Number.isNaN(value)) {
+		throw new RequestError(400, `${param} must be a number`);
+	}
+
+	return value;
 }
 
 /** Returns an empty response to the client. */

@@ -1,4 +1,11 @@
-import { Category, Forum, ForumStats, PostAndUser, User } from '../database/types';
+import {
+	Category,
+	Forum,
+	ForumStats,
+	PostAndUser,
+	Topic,
+	User,
+} from '../database/types';
 
 export type ForumWithPost = Forum & {
 	latest?: PostAndUser;
@@ -14,4 +21,11 @@ export type HomeData = {
 	newestPost: PostAndUser;
 	newestUser: User;
 	stats: ForumStats;
+}
+
+export interface ForumInfo {
+	category: Category;
+	forum: Forum;
+	moderators: User[];
+	topics: number;
 }

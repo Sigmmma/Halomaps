@@ -33,6 +33,16 @@ export async function getCategories(categoryId?: number): Promise<Category[]> {
 }
 
 /**
+ * Gets a Forum by ID. Returned `undefined` if `forumId` matches no Forums.
+ */
+export async function getForum(forumId: number): Promise<Forum | undefined> {
+	const forum = await knex<Forum>(Table.FORUMS)
+		.first()
+		.where('id', '=', forumId);
+	return parseDates(forum, ['mirrored_at']);
+}
+
+/**
  * Gets a list of Forums by Category ID.
  * - If `categoryId` is `undefined`, all Forums are returned.
  * - If `categoryId` matches no Category, an empty list is returned.
@@ -123,6 +133,15 @@ export async function getStats(): Promise<ForumStats> {
 	}, {} as Record<keyof ForumStats, number | Date>);
 
 	return statHash as ForumStats;
+}
+
+/** Fetches the number of Topics in the given Forum. */
+export async function getTopicCount(forumId: number): Promise<number> {
+	const row = await knex<Topic>(Table.TOPICS)
+		.first()
+		.count()
+		.where('forum_id', '=', forumId);
+	return row['count(*)'] as number;
 }
 
 /** Fetches a User by ID. */
