@@ -3,7 +3,7 @@ import React, { JSX } from 'react';
 import { User } from '../../../server/database/types';
 
 interface UserProps {
-	user: User;
+	user: Pick<User, 'name'|'id'>;
 }
 
 export default function UserLink({ user }: UserProps): JSX.Element {
