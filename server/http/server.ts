@@ -13,22 +13,9 @@ import {
 const info = require('../package.json');
 
 /**
- * A simple HTTP server that recreates Halomaps' queries.
+ * A simple HTTP server for retrieving Halomaps data.
  *
- * All queries to Halomaps' forum were done through an endpoint index.cfm.
- * Forums, Topics, Users, etc... were all requested via query parameters to
- * this one endpoint. Halomaps would then render the HTML server-side on-demand,
- * then serve the full page to the client.
- *
- * Examples:
- *   index.cfm?page=topic&topicID=12345&start=36
- *   index.cfm?page=userInfo&viewuserid=54321
- *
- * Supporting these queries as Halomaps did will preserve links to other forum
- * pages in Post content to continue working with this new mirror.
- *
- * The only difference is that instead of rendering the HTML server-side, we
- * will return the data as JSON a client can use to render the page themselves.
+ * See client/src/index.tsx for rationale.
  */
 const server = polka();
 export default server;

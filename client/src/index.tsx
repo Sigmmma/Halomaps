@@ -31,6 +31,22 @@ const useGlobalStyles = createUseStyles({
 
 createRoot(document.getElementById('app-root')!).render(<App />);
 
+/**
+* All queries to Halomaps' forum were done through an endpoint index.cfm.
+* Forums, Topics, Users, etc... were all requested via query parameters to
+* this one endpoint. Halomaps would then render the HTML server-side on-demand,
+* then serve the full page to the client.
+*
+* Examples:
+*   index.cfm?page=topic&topicID=12345&start=36
+*   index.cfm?page=userInfo&viewuserid=54321
+*
+* Supporting these queries as Halomaps did will preserve links to other forum
+* pages in Post content to continue working with this new mirror.
+*
+* The only difference is that instead of rendering the HTML server-side, we
+* fetch the raw data as JSON and use React to render it client-side.
+*/
 const ROUTER = createBrowserRouter([
 	{ path: '*',          element: <NotFound /> },
 	{ path: '/index.cfm', element: <QueryRouter />},
