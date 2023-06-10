@@ -9,6 +9,7 @@ import {
 	ForumInfo,
 	ForumWithPost,
 	HomeData,
+	TopicList,
 } from './types';
 const info = require('../package.json');
 
@@ -32,7 +33,7 @@ const CATEGORY_ID = 'categoryId';
 const FORUM_ID = 'forumId';
 
 server.get(`/forum/:${FORUM_ID}`, wrapHandler(getForum));
-server.get(`/forum/:${FORUM_ID}/posts`, wrapHandler(getForumTopics));
+server.get(`/forum/:${FORUM_ID}/topics`, wrapHandler(getForumTopics));
 server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
 server.get('/info', wrapHandler(getInfo));
 
@@ -156,6 +157,26 @@ async function getForum(request: Request): Promise<ForumInfo> {
 }
 
 /**
+ * Fetches a chunk of Topics for a Forum page.
+ */
+async function getForumTopics(request: Request): Promise<TopicList> {
+	const forumId = getNumberParam(request, FORUM_ID);
+	const limit = getNumberQuery(request, 'count') ?? database.MAX_TOPIC_PAGE_SIZE;
+	const start = getNumberQuery(request, 'start') ?? 0;
+
+	const topics = await database.getTopics({
+		forumId,
+		limit,
+		start,
+	});
+
+	return {
+		start,
+		topics,
+	};
+}
+
+/**
  *
  */
 async function getUser(request: Request) {
@@ -178,12 +199,38 @@ class RequestError extends Error {
 	}
 }
 
-/** Extracts, parses, and validates a numerical query parameter. */
+/** Extracts, parses, and validates a numerical path parameter. */
 function getNumberParam(request: Request, param: string): number {
 	const value = Number.parseInt(request.params[param]);
 
 	if (Number.isNaN(value)) {
 		throw new RequestError(400, `${param} must be a number`);
+	}
+
+	return value;
+}
+
+/**
+ * Extracts, parses, and validates a numerical query parameter.
+ *
+ * Query parameters are always optional in our system.
+ * We also only expect one instance of any numerical query parameter,
+ * so we can enforce that here.
+ */
+function getNumberQuery(request: Request, paramName: string): number | undefined {
+	const param = request.query[paramName];
+	if (!param) {
+		return undefined;
+	}
+
+	if (typeof param !== 'string') {
+		throw new RequestError(400, `Only one instance of ${paramName} is allowed`);
+	}
+
+	const value = Number.parseInt(param);
+
+	if (Number.isNaN(value)) {
+		throw new RequestError(400, `${paramName} must be a number, if provided`);
 	}
 
 	return value;

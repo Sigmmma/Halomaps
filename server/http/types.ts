@@ -3,7 +3,7 @@ import {
 	Forum,
 	ForumStats,
 	PostAndUser,
-	Topic,
+	TopicWithInfo,
 	User,
 } from '../database/types';
 
@@ -21,6 +21,11 @@ export type HomeData = {
 	newestPost: PostAndUser;
 	newestUser: User;
 	stats: ForumStats;
+}
+
+export interface TopicList {
+	start: number;
+	topics: TopicWithInfo[];
 }
 
 export interface ForumInfo {

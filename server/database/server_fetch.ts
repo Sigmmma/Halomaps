@@ -12,8 +12,17 @@ import {
 	PostAndUser,
 	Stat,
 	Topic,
+	TopicWithInfo,
 	User,
 } from './types';
+
+interface TopicQuery {
+	forumId: number;
+	limit?: number;
+	start?: number;
+}
+
+export const MAX_TOPIC_PAGE_SIZE = 50;
 
 /**
  * Gets a list of Categories.
@@ -135,6 +144,56 @@ export async function getStats(): Promise<ForumStats> {
 	return statHash as ForumStats;
 }
 
+/**
+ * Gets a page of Topics within the given Forum. These are intended to show up
+ * in a list of Topics, so the returned Topics also include number of Posts and
+ * most recent Post.
+ */
+export async function getTopics(query: TopicQuery): Promise<TopicWithInfo[]> {
+	const LATEST_POSTS = 'latest_posts';
+	const POST_TIME = 'latest_post_time';
+	const POST_AUTHOR_ID = 'latest_post_author_id';
+	const POST_AUTHOR_NAME = 'latest_post_author_name';
+	const USERNAMES = 'user_names';
+
+	const latestPostGroupedByTopicQuery = knex<Post>(Table.POSTS)
+		.select(
+			{ [POST_AUTHOR_ID]: 'author_id' },
+			'topic_id',
+		)
+		.count('topic_id', { as: 'post_count' })
+		.max('created_at', { as: POST_TIME })
+		.groupBy('topic_id');
+
+	const userNameQuery = knex<User>(Table.USERS)
+		.select(
+			{ [POST_AUTHOR_ID]:   'id'   },
+			{ [POST_AUTHOR_NAME]: 'name' },
+		);
+
+	// Type safety kinda goes out the window with compound queries like this.
+	const rows: TopicWithInfo[] = await knex<TopicWithInfo>(Table.TOPICS)
+		.with(LATEST_POSTS, latestPostGroupedByTopicQuery)
+		.with(USERNAMES, userNameQuery)
+		.select('*')
+		.innerJoin(LATEST_POSTS, join => join
+			.on(`${LATEST_POSTS}.topic_id`, '=', `${Table.TOPICS}.id`)
+		)
+		.innerJoin(USERNAMES, join => join
+			.on(`${USERNAMES}.${POST_AUTHOR_ID}`, '=', `${LATEST_POSTS}.${POST_AUTHOR_ID}`)
+		)
+		.orderBy([
+			{ column: 'pinned',  order: 'desc' },
+			{ column: POST_TIME, order: 'desc' },
+		])
+		.offset(query.start ?? 0)
+		.limit(clamp(0, query.limit ?? MAX_TOPIC_PAGE_SIZE, MAX_TOPIC_PAGE_SIZE));
+
+	return rows.map(row =>
+		parseDates(row, ['created_at', 'latest_post_time', 'mirrored_at'])
+	);
+}
+
 /** Fetches the number of Topics in the given Forum. */
 export async function getTopicCount(forumId: number): Promise<number> {
 	const row = await knex<Topic>(Table.TOPICS)
@@ -151,6 +210,11 @@ export async function getUser(userId: number): Promise<User | undefined> {
 		.where('id', '=', userId);
 
 	return parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at']);
+}
+
+/** Constrains a value between the min and max. */
+function clamp(min: number, value: number, max: number): number {
+	return Math.min(Math.max(min, value), max);
 }
 
 // Fields in T with (possibly optional) Date https://stackoverflow.com/a/49752227

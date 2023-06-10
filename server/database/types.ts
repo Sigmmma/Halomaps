@@ -71,3 +71,10 @@ export interface PostAndUser {
 	post: Post;
 	user: User;
 }
+
+export type TopicWithInfo = Topic & {
+	latest_post_author_id: number;
+	latest_post_author_name: string;
+	latest_post_time: Date;
+	post_count: number;
+};
