@@ -3,6 +3,7 @@ import React, { JSX, ReactNode } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import { Design, Icons } from '../images';
+import classNames from 'classnames';
 
 const useTableStyles = createUseStyles({
 	blue: {
@@ -42,17 +43,23 @@ export interface Column<T> {
 }
 
 interface TableProps<T> {
+	className?: string;
 	columns: Column<T>[];
 	rows: (T | SeparatorContainer)[];
 }
 
 export function Table<T>({
+	className,
 	columns,
 	rows,
 }: TableProps<T>): JSX.Element {
 	const styles = useTableStyles();
 	return (
-		<table cellSpacing={1} cellPadding={1} className={styles.table}>
+		<table
+			cellPadding={1}
+			cellSpacing={1}
+			className={classNames(styles.table, className)}
+		>
 			<TableHeader columns={columns} />
 			<TableBody columns={columns} rows={rows} />
 		</table>
