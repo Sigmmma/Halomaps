@@ -22,7 +22,6 @@ export enum PaneType {
 
 const useStyles = createUseStyles({
 	container: {
-		backgroundColor: '#F2F2F2',
 		borderColor: 'black',
 		borderStyle: 'solid',
 		borderWidth: '1px',
@@ -47,6 +46,9 @@ const useStyles = createUseStyles({
 	error:   { backgroundImage: `url(${Design.BAR_DARK_ERR})`  },
 	normal:  { backgroundImage: `url(${Design.BAR_DARK})`      },
 	warning: { backgroundImage: `url(${Design.BAR_DARK_WARN})` },
+	errorBg:   { backgroundColor: '#FFF2F2' },
+	normalBg:  { backgroundColor: '#F2F2F2' },
+	warningBg: { backgroundColor: '#FFFFF2' },
 });
 
 export function Pane({
@@ -57,11 +59,18 @@ export function Pane({
 }: PaneProps & PropsWithChildren): JSX.Element {
 	const styles = useStyles();
 	return (
-		<div className={styles.container} style={width ? {width} : undefined}>
+		<div
+			className={classNames(styles.container, {
+				[styles.normalBg]:  type === PaneType.NORMAL,
+				[styles.warningBg]: type === PaneType.WARNING,
+				[styles.errorBg]:   type === PaneType.ERROR,
+			})}
+			style={width ? {width} : undefined}
+		>
 			<div className={classNames(styles.title, {
-				[styles.normal]: type === PaneType.NORMAL,
+				[styles.normal]:  type === PaneType.NORMAL,
 				[styles.warning]: type === PaneType.WARNING,
-				[styles.error]: type === PaneType.ERROR,
+				[styles.error]:   type === PaneType.ERROR,
 			})}>
 				{title}
 			</div>
