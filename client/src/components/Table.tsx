@@ -1,9 +1,9 @@
+import classNames from 'classnames';
 import { Property } from 'csstype'; // From react-jss
 import React, { JSX, ReactNode } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import { Design, Icons } from '../images';
-import classNames from 'classnames';
 
 const useTableStyles = createUseStyles({
 	blue: {
@@ -178,10 +178,12 @@ class SeparatorContainer {
 const useSeparatorStyles = createUseStyles({
 	separator: {
 		backgroundImage: `url(${Design.BAR_LIGHT})`,
-		height: '18px',
 		paddingTop: '2px',
 		paddingBottom: '0px',
 		verticalAlign: 'middle',
+	},
+	rawContent: {
+		height: '18px',
 	},
 	topLink: {
 		float: 'right',
@@ -201,7 +203,13 @@ function TableSeparator({
 }: SeparatorProps & { colSpan: number }): JSX.Element {
 	const styles = useSeparatorStyles();
 	return (
-		<tr><td className={styles.separator} colSpan={colSpan}>
+		<tr><td
+			className={classNames(styles.separator, {
+				// Set default height for basic text, otherwise fit to content.
+				[styles.rawContent]: typeof content !== 'object',
+			})}
+			colSpan={colSpan}
+		>
 			<b>{content}</b>
 
 			{showTop && (
