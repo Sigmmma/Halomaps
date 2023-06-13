@@ -1,4 +1,4 @@
-import React, { JSX, ReactNode } from 'react';
+import React, { Fragment, JSX, ReactNode } from 'react';
 import { createUseStyles } from 'react-jss';
 
 interface PageControlProps {
@@ -53,7 +53,9 @@ export function PageControl({
 			</div>
 			<div className={styles.control}>
 				Go to page:{' '}
-				{links.map(link => <>{' · '}{link}</>)}
+				{links.map((link, idx) => (
+					<Fragment key={idx}>{' · '}{link}</Fragment>
+				))}
 			</div>
 		</div>
 	);

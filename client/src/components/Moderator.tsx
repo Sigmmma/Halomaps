@@ -17,6 +17,6 @@ export default function ModeratorList({
 	// TODO maybe request this list from server
 	return <div className={className}>
 		<b>Moderators: </b>
-		{moderators.map(user => <UserLink user={user} />)}
+		{moderators.map((user, idx) => <UserLink key={idx} user={user} />)}
 	</div>
 }
