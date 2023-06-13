@@ -28,7 +28,15 @@ const useStyles = createUseStyles({
 	},
 });
 
-export function PageControl({
+/**
+ * Creates the page link control that emulate this behavior:
+ * - Go to page: · [1] · 2 · 3 · 4 · 5 · 6 · 7 · 8 · ... · 298 · Next
+ * - Go to page: · 1 · ... · 290 · 291 · 292 · [293] · 294 · 295 · 296 · ... · 298 · Prev · Next
+ * - Go to page: · 1 · ... · 291 · 292 · 293 · 294 · 295 · 296 · 297 · [298] · Prev
+ *
+ * See {@link generatePageList} for rationale.
+ */
+export function TopicPageControl({
 	count,
 	pageSize,
 	start,
@@ -61,6 +69,52 @@ export function PageControl({
 	);
 }
 
+/**
+ * Creates the page link control that emulate this behavior:
+ * - (Page: · 1 · 2 · 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · Last Page ) // Last -> 10
+ * - (Page: · 1 · 2 · 3 · 4 · ... · 8 · 9 · 10 · Last Page ) // Last -> 11
+ * - (Page: · 1 · 2 · 3 · 4 · ... · 368 · 369 · 370 · Last Page ) // Last -> 371
+ *
+ * Basically,
+ * For only 1 page, don't show this control at all.
+ * For 10 or less pages, show all, "Last Page" same link before it.
+ * For 11 or more pages, show first 4, ellipsis, last 4 where "Last Page" is last
+ */
+export function OverviewPageControl({
+	count,
+	pageSize,
+	buildUrl,
+}: Omit<PageControlProps, 'start'>): JSX.Element {
+	const { pageCount } = calcPage(count, pageSize, 1);
+
+	const links = pageCount > 10
+		? [1, 2, 3, 4, null, pageCount - 3, pageCount - 2, pageCount - 1, pageCount]
+		: [...new Array(pageCount).fill(null).map((_, i) => i + 1), pageCount];
+	const last = links.pop()!; // Guaranteed to have at least one number
+
+	if (count <= pageSize) {
+		return <></>;
+	} else {
+		return <>
+			{'(Page: · '}
+			{links.map((link, idx) => (
+				<Fragment key={idx}>
+					{link
+						? <a href={buildUrl(link)}>{link}</a>
+						: '...'
+					}
+					{' · '}
+				</Fragment>
+			))}
+			<a href={buildUrl(last)}>Last Page</a>
+			{' )'}
+		</>;
+	}
+}
+
+/**
+ * Renders the "Page 12 of 100" info.
+ */
 export function CurPage({
 	count,
 	pageSize,

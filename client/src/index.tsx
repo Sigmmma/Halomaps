@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import { Pane, PaneType } from './components/Pane';
 import useCaselessSearchParams from './hooks/useSearchParamsCaseInsensitive';
 import NotFound from './pages/404';
+import Forum from './pages/Forum';
 import Home from './pages/Home';
 
 const useGlobalStyles = createUseStyles({
@@ -52,7 +53,7 @@ const ROUTER = createBrowserRouter([
 const QUERY_ELEMS: Record<string, JSX.Element> = {
 	archiveinfo:    <Todo />,
 	forgotpassword: <Todo />,
-	forum:          <Todo />,
+	forum:          <Forum />,
 	home:           <Home />,
 	login:          <Todo />,
 	members:        <Todo />,
