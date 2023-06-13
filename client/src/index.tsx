@@ -45,6 +45,7 @@ createRoot(document.getElementById('app-root')!).render(<App />);
 */
 const ROUTER = createBrowserRouter([
 	{ path: '*',          element: <NotFound /> },
+	{ path: '/',          element: <Navigate to='/index.cfm?page=home' />},
 	{ path: '/index.cfm', element: <QueryRouter />},
 ]);
 
