@@ -162,7 +162,8 @@ async function getForum(request: Request): Promise<ForumInfo> {
 async function getForumTopics(request: Request): Promise<TopicList> {
 	const forumId = getNumberParam(request, FORUM_ID);
 	const limit = getNumberQuery(request, 'count') ?? database.MAX_TOPIC_PAGE_SIZE;
-	const start = getNumberQuery(request, 'start') ?? 0;
+	// Database is 0-indexed while the client is 1-indexed
+	const start = (getNumberQuery(request, 'start') ?? 1) - 1;
 
 	const topics = await database.getTopics({
 		forumId,
@@ -171,7 +172,7 @@ async function getForumTopics(request: Request): Promise<TopicList> {
 	});
 
 	return {
-		start,
+		start: start + 1,
 		topics,
 	};
 }

@@ -149,7 +149,11 @@ export async function getStats(): Promise<ForumStats> {
  * in a list of Topics, so the returned Topics also include number of Posts and
  * most recent Post.
  */
-export async function getTopics(query: TopicQuery): Promise<TopicWithInfo[]> {
+export async function getTopics({
+	forumId,
+	limit,
+	start
+}: TopicQuery): Promise<TopicWithInfo[]> {
 	const LATEST_POSTS = 'latest_posts';
 	const POST_TIME = 'latest_post_time';
 	const POST_AUTHOR_ID = 'latest_post_author_id';
@@ -182,12 +186,13 @@ export async function getTopics(query: TopicQuery): Promise<TopicWithInfo[]> {
 		.innerJoin(USERNAMES, join => join
 			.on(`${USERNAMES}.${POST_AUTHOR_ID}`, '=', `${LATEST_POSTS}.${POST_AUTHOR_ID}`)
 		)
+		.where('forum_id', '=', forumId)
 		.orderBy([
 			{ column: 'pinned',  order: 'desc' },
 			{ column: POST_TIME, order: 'desc' },
 		])
-		.offset(query.start ?? 0)
-		.limit(clamp(0, query.limit ?? MAX_TOPIC_PAGE_SIZE, MAX_TOPIC_PAGE_SIZE));
+		.offset(start ?? 0)
+		.limit(clamp(0, limit ?? MAX_TOPIC_PAGE_SIZE, MAX_TOPIC_PAGE_SIZE));
 
 	return rows.map(row =>
 		parseDates(row, ['created_at', 'latest_post_time', 'mirrored_at'])
