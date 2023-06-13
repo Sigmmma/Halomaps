@@ -60,7 +60,7 @@ function getInfo(): string {
  *   - index.cfm?page=home&category=1
  */
 async function getHome(request: Request): Promise<HomeData> {
-	const categoryId = getNumberParam(request, CATEGORY_ID);
+	const categoryId = getNumberParamOptional(request, CATEGORY_ID);
 
 	// Comes sorted from the database.
 	const categories: CategoryWithForum[] = await database.getCategories(categoryId);
@@ -208,6 +208,13 @@ function getNumberParam(request: Request, param: string): number {
 	}
 
 	return value;
+}
+
+/** Extracts, parses, and validates an optional numerical path parameter. */
+function getNumberParamOptional(request: Request, param: string): number | undefined {
+	const value = Number.parseInt(request.params[param]);
+
+	return Number.isNaN(value) ? undefined : value;
 }
 
 /**
