@@ -1,16 +1,12 @@
 import React, { JSX } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createUseStyles } from 'react-jss';
-import {
-	createBrowserRouter,
-	Navigate,
-	RouterProvider,
-	useSearchParams,
-} from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
 import FullHeader from './components/Header';
 import Footer from './components/Footer';
 import { Pane, PaneType } from './components/Pane';
+import useCaselessSearchParams from './hooks/useSearchParamsCaseInsensitive';
 import NotFound from './pages/404';
 import Home from './pages/Home';
 
@@ -77,7 +73,7 @@ function App(): JSX.Element {
 }
 
 function QueryRouter(): JSX.Element {
-	const [params] = useSearchParams();
+	const [params] = useCaselessSearchParams();
 	const page = params.get('page');
 	return page
 		? QUERY_ELEMS[page] ?? <NotFound />
