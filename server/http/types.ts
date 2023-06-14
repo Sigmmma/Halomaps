@@ -3,6 +3,7 @@ import {
 	Forum,
 	ForumStats,
 	PostAndUser,
+	TopicPosts,
 	TopicWithInfo,
 	User,
 } from '../database/types';
@@ -33,4 +34,8 @@ export interface ForumInfo {
 	forum: Forum;
 	moderators: User[];
 	topics: number;
+}
+
+export type TopicPostPage = TopicPosts & {
+	start: number;
 }

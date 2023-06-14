@@ -78,3 +78,9 @@ export type TopicWithInfo = Topic & {
 	latest_post_time: Date;
 	post_count: number;
 };
+
+export interface TopicPosts {
+	postCount: number;
+	posts: Post[];
+	users: User[];
+}

@@ -12,16 +12,25 @@ import {
 	PostAndUser,
 	Stat,
 	Topic,
+	TopicPosts,
 	TopicWithInfo,
 	User,
 } from './types';
 
-interface TopicQuery {
-	forumId: number;
+interface Paginated {
 	limit?: number;
 	start?: number;
 }
 
+type PostQuery = Paginated & {
+	topicId: number;
+}
+
+type TopicQuery = Paginated & {
+	forumId: number;
+}
+
+export const MAX_POST_PAGE_SIZE = 35;
 export const MAX_TOPIC_PAGE_SIZE = 50;
 
 /**
@@ -130,6 +139,43 @@ export async function getModerators(): Promise<User[]> {
 	return await Promise.all([DENNIS_ID].map(id => getUser(id)));
 }
 
+/**
+ * Gets list of Posts and their Authors for a page in a Topic.
+ * Also includes the total number of Posts in the Topic.
+ */
+export async function getPosts({
+	topicId,
+	limit,
+	start,
+}: PostQuery): Promise<TopicPosts> {
+	const NUM_POSTS = 'num_posts';
+
+	const postCountRow = await knex<Post>(Table.POSTS)
+		.first()
+		.count('*', { as: NUM_POSTS })
+		.where('topic_id', '=', topicId);
+	const postCount = postCountRow[NUM_POSTS] as number;
+
+	const posts = await knex<Post>(Table.POSTS)
+		.select()
+		.where('topic_id', '=', topicId)
+		.orderBy('created_at', 'asc')
+		.offset(start)
+		.limit(clamp(0, limit ?? MAX_POST_PAGE_SIZE, MAX_POST_PAGE_SIZE));
+
+	const authorIds = [...new Set(posts.map(post => post.author_id))]
+
+	const users = await knex<User>(Table.USERS)
+		.select()
+		.whereIn('id', authorIds);
+
+	return {
+		postCount,
+		posts: posts.map(post => parseDates(post, ['created_at', 'mirrored_at'])),
+		users: users.map(user => parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at'])),
+	};
+}
+
 /** Gets all of the arbitrary stats in the database. */
 export async function getStats(): Promise<ForumStats> {
 	const statRows = await knex<Stat>(Table.STATS).select()
@@ -191,7 +237,7 @@ export async function getTopics({
 			{ column: 'pinned',  order: 'desc' },
 			{ column: POST_TIME, order: 'desc' },
 		])
-		.offset(start ?? 0)
+		.offset(start)
 		.limit(clamp(0, limit ?? MAX_TOPIC_PAGE_SIZE, MAX_TOPIC_PAGE_SIZE));
 
 	return rows.map(row =>

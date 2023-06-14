@@ -10,6 +10,7 @@ import {
 	ForumWithPost,
 	HomeData,
 	TopicList,
+	TopicPostPage,
 } from './types';
 const info = require('../package.json');
 
@@ -31,11 +32,13 @@ server.use('/', (request, _response, next) => {
 
 const CATEGORY_ID = 'categoryId';
 const FORUM_ID = 'forumId';
+const TOPIC_ID = 'topicId';
 
 server.get(`/forum/:${FORUM_ID}`, wrapHandler(getForum));
 server.get(`/forum/:${FORUM_ID}/topics`, wrapHandler(getForumTopics));
 server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
 server.get('/info', wrapHandler(getInfo));
+server.get(`/topic/:${TOPIC_ID}`, wrapHandler(getTopic));
 
 /**
  * Return info for AGPL compliance.
@@ -157,7 +160,7 @@ async function getForum(request: Request): Promise<ForumInfo> {
 }
 
 /**
- * Fetches a chunk of Topics for a Forum page.
+ * Fetches the list of Topics for a Forum page.
  */
 async function getForumTopics(request: Request): Promise<TopicList> {
 	const forumId = getNumberParam(request, FORUM_ID);
@@ -185,10 +188,24 @@ async function getUser(request: Request) {
 }
 
 /**
- *
+ * Fetches the list of Posts and Users for a Topic page.
  */
-async function getTopic(request: Request) {
-	return 'TODO';
+async function getTopic(request: Request): Promise<TopicPostPage> {
+	const topicId = getNumberParam(request, TOPIC_ID);
+	const limit = getNumberQuery(request, 'count') ?? database.MAX_POST_PAGE_SIZE;
+	// Database is 0-indexed while the client is 1-indexed
+	const start = (getNumberQuery(request, 'start') ?? 1) - 1;
+
+	const postsAndUsers = await database.getPosts({
+		topicId,
+		limit,
+		start,
+	});
+
+	return {
+		start: start + 1,
+		...postsAndUsers,
+	};
 }
 
 /** An Error that can specify an HTTP response code. */
