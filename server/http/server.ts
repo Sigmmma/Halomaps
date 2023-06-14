@@ -12,6 +12,7 @@ import {
 	TopicList,
 	TopicPostPage,
 } from './types';
+import { TopicWithCount } from '../database/types';
 const info = require('../package.json');
 
 /**
@@ -39,6 +40,7 @@ server.get(`/forum/:${FORUM_ID}/topics`, wrapHandler(getForumTopics));
 server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
 server.get('/info', wrapHandler(getInfo));
 server.get(`/topic/:${TOPIC_ID}`, wrapHandler(getTopic));
+server.get(`/topic/:${TOPIC_ID}/posts`, wrapHandler(getTopicPosts));
 
 /**
  * Return info for AGPL compliance.
@@ -188,9 +190,18 @@ async function getUser(request: Request) {
 }
 
 /**
+ * Fetches the information for a Topic.
+ */
+async function getTopic(request: Request): Promise<TopicWithCount> {
+	const topicId = getNumberParam(request, TOPIC_ID);
+	const topic = await database.getTopic(topicId);
+	return topic;
+}
+
+/**
  * Fetches the list of Posts and Users for a Topic page.
  */
-async function getTopic(request: Request): Promise<TopicPostPage> {
+async function getTopicPosts(request: Request): Promise<TopicPostPage> {
 	const topicId = getNumberParam(request, TOPIC_ID);
 	const limit = getNumberQuery(request, 'count') ?? database.MAX_POST_PAGE_SIZE;
 	// Database is 0-indexed while the client is 1-indexed

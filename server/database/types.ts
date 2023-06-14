@@ -72,6 +72,10 @@ export interface PostAndUser {
 	user: User;
 }
 
+export type TopicWithCount = Topic & {
+	posts: number;
+}
+
 export type TopicWithInfo = Topic & {
 	latest_post_author_id: number;
 	latest_post_author_name: string;
@@ -80,7 +84,6 @@ export type TopicWithInfo = Topic & {
 };
 
 export interface TopicPosts {
-	postCount: number;
 	posts: Post[];
 	users: User[];
 }
