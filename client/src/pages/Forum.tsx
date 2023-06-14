@@ -30,14 +30,13 @@ const useStyles = createUseStyles({
 	},
 	pin: {
 		marginLeft: '4px',
-		marginRight: '-1px',
 		verticalAlign: 'bottom',
 	},
 	table: {
 		marginTop: '0px',
 	},
 	title: {
-		paddingLeft: '5px',
+		paddingLeft: '4px',
 	},
 });
 
