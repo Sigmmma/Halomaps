@@ -1,5 +1,7 @@
-import React, { JSX } from 'react';
+import React, { Fragment, JSX } from 'react';
 import { createUseStyles } from 'react-jss';
+
+import { Buttons } from '../images';
 
 interface PathPart {
 	url: string;
@@ -11,13 +13,22 @@ interface PathProps {
 }
 
 const useStyles = createUseStyles({
-	container: {
-		marginTop: '12px',
+	button: {
+		float: 'right',
+		height: '24px',
+		textAlign: 'end',
 	},
-	link: {
+	container: {
+		display: 'table',
+		marginTop: '3px',
+		width: '95%',
+	},
+	links: {
+		display: 'table-cell',
 		fontSize: '11px',
 		fontWeight: 'bold',
-		marginRight: '4px',
+		verticalAlign: 'bottom',
+		width: 'calc(100% - 92px)',
 	},
 })
 
@@ -30,12 +41,18 @@ export default function Path({ parts }: PathProps): JSX.Element {
 	const styles = useStyles();
 	return (
 		<div className={styles.container}>
-			{[FIRST_PART, ...parts].map((part, idx) => (
-				<span className={styles.link} key={idx}>
-					»
-					<a href={part.url}>{part.name}</a>
-				</span>
-			))}
+			<div className={styles.links}>
+				{[FIRST_PART, ...parts].map((part, idx) => (
+					<Fragment key={idx}>
+						»
+						<a href={part.url}>{part.name}</a>
+						{' '}
+					</Fragment>
+				))}
+			</div>
+			<a className={styles.button} href='TODO'>
+				<img src={Buttons.NEW_TOPIC} />
+			</a>
 		</div>
 	);
 }

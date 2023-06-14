@@ -1,3 +1,7 @@
+export const Buttons = {
+	NEW_TOPIC: image('buttons/newtopic.gif'),
+};
+
 export const Design = {
 	BAR_DARK:      image('design/darkbg.gif'),
 	BAR_DARK_ERR:  image('design/darkbgred.gif'),
