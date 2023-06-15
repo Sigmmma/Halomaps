@@ -10,9 +10,9 @@ import {
 	ForumWithPost,
 	HomeData,
 	TopicList,
+	TopicInfo,
 	TopicPostPage,
 } from './types';
-import { TopicWithCount } from '../database/types';
 const info = require('../package.json');
 
 /**
@@ -192,10 +192,16 @@ async function getUser(request: Request) {
 /**
  * Fetches the information for a Topic.
  */
-async function getTopic(request: Request): Promise<TopicWithCount> {
+async function getTopic(request: Request): Promise<TopicInfo> {
 	const topicId = getNumberParam(request, TOPIC_ID);
+
+	const moderators = await database.getModerators();
 	const topic = await database.getTopic(topicId);
-	return topic;
+
+	return {
+		moderators,
+		topic,
+	};
 }
 
 /**

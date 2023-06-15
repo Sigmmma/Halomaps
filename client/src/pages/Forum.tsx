@@ -2,7 +2,7 @@ import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 import { useAsync } from 'react-use';
 
-import { TopicWithInfo } from '../../../server/database/types';
+import { TopicWithPostInfo } from '../../../server/database/types';
 
 import Client from '../client';
 import AsyncContent from '../components/AsyncContent';
@@ -40,7 +40,7 @@ const useStyles = createUseStyles({
 	},
 });
 
-const COLUMNS: Column<TopicWithInfo>[] = [
+const COLUMNS: Column<TopicWithPostInfo>[] = [
 	{
 		header: undefined,
 		width: '32px',
@@ -129,7 +129,7 @@ export default function Forum(): JSX.Element {
 //******************************************************************************
 
 interface TopicProp {
-	topic: TopicWithInfo;
+	topic: TopicWithPostInfo;
 }
 
 function TopicIcon({ topic }: TopicProp): JSX.Element {

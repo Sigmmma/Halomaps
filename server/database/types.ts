@@ -76,7 +76,7 @@ export type TopicWithCount = Topic & {
 	posts: number;
 }
 
-export type TopicWithInfo = Topic & {
+export type TopicWithPostInfo = Topic & {
 	latest_post_author_id: number;
 	latest_post_author_name: string;
 	latest_post_time: Date;

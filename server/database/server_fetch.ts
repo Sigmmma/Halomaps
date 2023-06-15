@@ -14,7 +14,7 @@ import {
 	Topic,
 	TopicPosts,
 	TopicWithCount,
-	TopicWithInfo,
+	TopicWithPostInfo,
 	User,
 } from './types';
 
@@ -215,7 +215,7 @@ export async function getTopics({
 	forumId,
 	limit,
 	start
-}: TopicQuery): Promise<TopicWithInfo[]> {
+}: TopicQuery): Promise<TopicWithPostInfo[]> {
 	const LATEST_POSTS = 'latest_posts';
 	const POST_TIME = 'latest_post_time';
 	const POST_AUTHOR_ID = 'latest_post_author_id';
@@ -238,7 +238,7 @@ export async function getTopics({
 		);
 
 	// Type safety kinda goes out the window with compound queries like this.
-	const rows: TopicWithInfo[] = await knex<TopicWithInfo>(Table.TOPICS)
+	const rows: TopicWithPostInfo[] = await knex<TopicWithPostInfo>(Table.TOPICS)
 		.with(LATEST_POSTS, latestPostGroupedByTopicQuery)
 		.with(USERNAMES, userNameQuery)
 		.select('*')

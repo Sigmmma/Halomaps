@@ -4,7 +4,8 @@ import {
 	ForumStats,
 	PostAndUser,
 	TopicPosts,
-	TopicWithInfo,
+	TopicWithCount,
+	TopicWithPostInfo,
 	User,
 } from '../database/types';
 
@@ -26,7 +27,7 @@ export type HomeData = {
 
 export interface TopicList {
 	start: number;
-	topics: TopicWithInfo[];
+	topics: TopicWithPostInfo[];
 }
 
 export interface ForumInfo {
@@ -34,6 +35,11 @@ export interface ForumInfo {
 	forum: Forum;
 	moderators: User[];
 	topics: number;
+}
+
+export interface TopicInfo {
+	moderators: User[];
+	topic: TopicWithCount;
 }
 
 export type TopicPostPage = TopicPosts & {
