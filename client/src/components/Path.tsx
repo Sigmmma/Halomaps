@@ -1,11 +1,12 @@
 import React, { Fragment, JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
-import { Buttons } from '../images';
+import { Buttons, Icons } from '../images';
 
 interface PathPart {
-	url: string;
+	locked?: boolean;
 	name: string;
+	url: string;
 }
 
 interface PathProps {
@@ -30,11 +31,14 @@ const useStyles = createUseStyles({
 		verticalAlign: 'bottom',
 		width: 'calc(100% - 92px)',
 	},
+	lock: {
+		verticalAlign: 'bottom',
+	},
 })
 
 const FIRST_PART: PathPart = {
-	url: '/index.cfm?page=home',
 	name: 'Forums Index',
+	url: '/index.cfm?page=home',
 };
 
 export default function Path({ parts }: PathProps): JSX.Element {
@@ -45,6 +49,11 @@ export default function Path({ parts }: PathProps): JSX.Element {
 				{[FIRST_PART, ...parts].map((part, idx) => (
 					<Fragment key={idx}>
 						»
+
+						{part.locked && (
+							<img src={Icons.LOCK} className={styles.lock} />
+						)}
+
 						<a href={part.url}>{part.name}</a>
 						{' '}
 					</Fragment>
