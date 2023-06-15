@@ -11,7 +11,7 @@ import ModeratorList from '../components/Moderator';
 import { OverviewPageControl, TopicPageControl } from '../components/PageControl';
 import Path from '../components/Path';
 import { Column, Separator, Table } from '../components/Table';
-import UserLink from '../components/User';
+import { UserLink } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Icons } from '../images';
 

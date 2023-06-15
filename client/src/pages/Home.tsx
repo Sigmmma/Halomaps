@@ -11,7 +11,7 @@ import { RelDate } from '../components/Date';
 import ModeratorList from '../components/Moderator';
 import ForumStats from '../components/Stats';
 import { Column, Separator, Table } from '../components/Table';
-import UserLink from '../components/User';
+import { UserLink } from '../components/User';
 import { Icons } from '../images';
 
 interface TableRowInfo {

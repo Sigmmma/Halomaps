@@ -5,7 +5,7 @@ import { Post, User } from '../../../server/database/types';
 
 import { RelDate } from './Date';
 import { Table } from './Table';
-import UserLink from './User';
+import { UserLink } from './User';
 
 interface StatProps {
 	lastPostUser: User;

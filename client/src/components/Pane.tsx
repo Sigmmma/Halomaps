@@ -2,6 +2,7 @@ import classNames from 'classnames';
 import { Property } from 'csstype'; // From react-jss
 import React, {JSX, PropsWithChildren } from 'react';
 import { createUseStyles } from 'react-jss';
+
 import { Design } from '../images';
 
 type PaneProps = {

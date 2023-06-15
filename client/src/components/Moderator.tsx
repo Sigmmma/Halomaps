@@ -1,7 +1,8 @@
 import React, { JSX } from 'react';
 
-import UserLink from './User';
 import { User } from '../../../server/database/types';
+
+import { UserLink } from './User';
 
 interface ModeratorsProps {
 	className?: string;

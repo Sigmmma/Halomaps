@@ -19,6 +19,7 @@ export const Icons = {
 	LOCK:          image('icons/icon_lock.gif'),
 	LOGIN:         image('icons/icon_login.gif'),
 	MEMBERS:       image('icons/icon_memberlist.gif'),
+	MODERATOR:     image('icons/users_moderator.gif'),
 	PINNED:        image('icons/icon_clip.gif'),
 	RECENT:        image('icons/icon_recent.gif'),
 	REGISTER:      image('icons/icon_register.gif'),
