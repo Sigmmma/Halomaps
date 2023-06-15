@@ -58,7 +58,12 @@ export default function Home(): JSX.Element {
 			header: 'Last Post',
 			blueBg: true,
 			width: '125px',
-			onRender: (info) => <PostInfo info={info.forum.latest!}/>,
+			onRender: (info) => (
+				<PostInfo
+					info={info.forum.latest!}
+					forumId={info.forum.id}
+				/>
+			),
 		},
 	];
 
@@ -120,7 +125,10 @@ function ForumInfo({ info }: ForumInfoProps): JSX.Element {
 				? <img className={styles.icon} src={Icons.LOCK} />
 				: <></>
 			}
-			<b><a href='TODO'>{forum.name}</a></b>
+
+			<b><a href={`/index.cfm?page=forum&forumId=${forum.id}`}>
+				{forum.name}
+			</a></b>
 
 			<div className={styles.description}>
 				{forum.description}
@@ -139,6 +147,7 @@ function ForumInfo({ info }: ForumInfoProps): JSX.Element {
 //******************************************************************************
 
 interface PostInfoProps {
+	forumId: number;
 	info: PostAndUser;
 }
 
@@ -153,13 +162,16 @@ const usePostStyles = createUseStyles({
 	},
 });
 
-function PostInfo({ info }: PostInfoProps): JSX.Element {
+function PostInfo({
+	forumId,
+	info,
+}: PostInfoProps): JSX.Element {
 	const styles = usePostStyles();
 	return (
 		<div className={styles.text}>
 			<RelDate date={info.post.created_at} /><br/>
 			<UserLink user={info.user} />
-			<a href='TODO'>
+			<a href={`/index.cfm_page=topic&eflag=findlasttopic&forumID=${forumId}`}>
 				<img className={styles.icon} src={Icons.TOPIC_JUMP} />
 			</a>
 		</div>
