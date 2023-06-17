@@ -22,6 +22,12 @@ class CaselessURLSearchParams extends URLSearchParams {
 		return super.get(name.toLowerCase());
 	}
 
+	// Our own helper, since this is such a common operation.
+	getInt(name: string): number | null {
+		const value = super.get(name.toLowerCase());
+		return value ? Number.parseInt(value) : null;
+	}
+
 	getAll(name: string): string[] {
 		return super.getAll(name.toLowerCase());
 	}

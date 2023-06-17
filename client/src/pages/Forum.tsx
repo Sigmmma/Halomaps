@@ -79,8 +79,8 @@ const COLUMNS: Column<TopicWithPostInfo>[] = [
 
 export default function Forum(): JSX.Element {
 	const [params] = useCaselessSearchParams();
-	const forumId = Number.parseInt(params.get('forumID') ?? '0');
-	const startAt = Number.parseInt(params.get('start') ?? '') || undefined;
+	const forumId = params.getInt('forumID') ?? 0;
+	const startAt = params.getInt('start') ?? undefined;
 
 	const forumInfo = useAsync(() => Promise.all([
 		// TODO need to separate these somehow, while allowing one AsyncContent
