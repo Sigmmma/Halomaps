@@ -171,7 +171,7 @@ function PostInfo({
 		<div className={styles.text}>
 			<RelDate date={info.post.created_at} /><br/>
 			<UserLink user={info.user} />
-			<a href={`/index.cfm_page=topic&eflag=findlasttopic&forumID=${forumId}`}>
+			<a href={`/index.cfm?page=topic&eflag=findlasttopic&forumID=${forumId}`}>
 				<img className={styles.icon} src={Icons.TOPIC_JUMP} />
 			</a>
 		</div>
