@@ -36,16 +36,16 @@ const useTableStyles = createUseStyles({
 
 export interface Column<T> {
 	blueBg?: boolean;
-	header?: string;
+	header?: ReactNode;
 	span?: number;
 	width?: Property.Width<(string & {}) | number>; // Stolen from react-jss for type info
-	onRender: (data: T) => ReactNode;
+	onRender: (row: T, index: number, rows: (SeparatorContainer | T)[]) => ReactNode;
 }
 
 interface TableProps<T> {
 	className?: string;
 	columns: Column<T>[];
-	rows: (T | SeparatorContainer)[];
+	rows: (SeparatorContainer | T)[];
 }
 
 export function Table<T>({
@@ -115,16 +115,30 @@ function TableBody<T>({
 						key={idx}
 						showTop={row.showTop}
 					/>
-					: <TableRow columns={columns} key={idx} row={row} />
+					: <TableRow
+						allRows={rows}
+						columns={columns}
+						index={idx}
+						key={idx}
+						row={row}
+					/>
 			))}
 		</tbody>
 	);
 }
 
+type TableRowProps<T> = Pick<TableProps<T>, 'columns'> & {
+	allRows: (T | SeparatorContainer)[];
+	row: T;
+	index: number;
+};
+
 function TableRow<T>({
+	allRows,
 	columns,
 	row,
-}: Pick<TableProps<T>, 'columns'> & { row: T }): JSX.Element {
+	index,
+}: TableRowProps<T>): JSX.Element {
 	const styles = useTableStyles();
 	return (
 		<tr>
@@ -134,7 +148,7 @@ function TableRow<T>({
 					key={idx}
 					style={{ width: column.width }}
 				>
-					{column.onRender(row)}
+					{column.onRender(row, index, allRows)}
 				</td>
 			))}
 		</tr>
