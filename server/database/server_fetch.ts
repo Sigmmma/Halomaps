@@ -182,6 +182,19 @@ export async function getStats(): Promise<ForumStats> {
 	return statHash as ForumStats;
 }
 
+/** Gets the latest Topic in the given Forum */
+export async function getLatestTopic(forumId: number): Promise<TopicWithCount | undefined> {
+	const latest = await knex<Topic>(Table.TOPICS)
+		.first()
+		.where('forum_id', '=', forumId)
+		.orderBy('created_at', 'desc');
+
+	if (!latest) return undefined;
+
+	const topicId = latest['id'];
+	return await getTopic(topicId);
+}
+
 /**
  * Gets a single Topic by ID
  */

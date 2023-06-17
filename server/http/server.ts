@@ -41,6 +41,7 @@ server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
 server.get('/info', wrapHandler(getInfo));
 server.get(`/topic/:${TOPIC_ID}`, wrapHandler(getTopic));
 server.get(`/topic/:${TOPIC_ID}/posts`, wrapHandler(getTopicPosts));
+server.get(`/topic/latest/:${FORUM_ID}`, wrapHandler(getLatestTopic));
 
 /**
  * Return info for AGPL compliance.
@@ -187,6 +188,19 @@ async function getForumTopics(request: Request): Promise<TopicList> {
  */
 async function getUser(request: Request) {
 	return 'TODO';
+}
+
+async function getLatestTopic(request: Request): Promise<TopicInfo> {
+	console.log('IN LATEST');
+	const forumId = getNumberParam(request, FORUM_ID);
+
+	const moderators = await database.getModerators();
+	const topic = await database.getLatestTopic(forumId);
+
+	return {
+		moderators,
+		topic,
+	};
 }
 
 /**

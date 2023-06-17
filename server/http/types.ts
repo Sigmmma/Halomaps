@@ -43,5 +43,6 @@ export interface TopicInfo {
 }
 
 export type TopicPostPage = TopicPosts & {
+	size: number;
 	start: number;
 }
