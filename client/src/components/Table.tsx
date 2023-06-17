@@ -1,6 +1,5 @@
 import classNames from 'classnames';
-import { Property } from 'csstype'; // From react-jss
-import React, { JSX, ReactNode } from 'react';
+import React, { JSX, ReactNode, TdHTMLAttributes } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import { Design, Icons } from '../images';
@@ -34,11 +33,12 @@ const useTableStyles = createUseStyles({
 	},
 });
 
-export interface Column<T> {
+export type Column<T> = Pick<
+	TdHTMLAttributes<HTMLTableCellElement>, 'valign'|'width'
+> & {
 	blueBg?: boolean;
 	header?: ReactNode;
 	span?: number;
-	width?: Property.Width<(string & {}) | number>; // Stolen from react-jss for type info
 	onRender: (row: T, index: number, rows: (SeparatorContainer | T)[]) => ReactNode;
 }
 
@@ -146,7 +146,8 @@ function TableRow<T>({
 				<td
 					className={column.blueBg ? styles.blue : styles.normal}
 					key={idx}
-					style={{ width: column.width }}
+					valign={column.valign}
+					width={column.width}
 				>
 					{column.onRender(row, index, allRows)}
 				</td>
