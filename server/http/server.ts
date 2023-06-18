@@ -191,7 +191,6 @@ async function getUser(request: Request) {
 }
 
 async function getLatestTopic(request: Request): Promise<TopicInfo> {
-	console.log('IN LATEST');
 	const forumId = getNumberParam(request, FORUM_ID);
 
 	const moderators = await database.getModerators();
