@@ -58,6 +58,7 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 	home:           <Home />,
 	login:          <Todo />,
 	members:        <Todo />,
+	newreply:       <Todo />,
 	recent:         <Todo />,
 	register:       <Todo />,
 	search:         <Todo />,

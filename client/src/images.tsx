@@ -1,5 +1,8 @@
 export const Buttons = {
-	NEW_TOPIC: image('buttons/newtopic.gif'),
+	NEW_TOPIC:   image('buttons/newtopic.gif'),
+	REPLY_POST:  image('buttons/post_reply.png'),
+	REPLY_QUOTE: image('buttons/quote_reply.png'),
+	REPLY_TOPIC: image('buttons/reply.gif'),
 };
 
 export const Design = {

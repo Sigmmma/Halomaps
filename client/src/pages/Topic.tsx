@@ -15,6 +15,7 @@ import { CurPage, TopicPageControl } from '../components/PageControl';
 import Path from '../components/Path';
 import { Column, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
+import { Buttons } from '../images';
 
 interface TopicInfoResponse {
 	info: TopicInfo;
@@ -31,6 +32,17 @@ const useStyles = createUseStyles({
 		paddingLeft: '10px',
 		paddingRight: '10px',
 		paddingTop: '10px',
+	},
+	postReply: {
+		float: 'right',
+		width: '300px',
+	},
+	postTopicButtons: {
+		float: 'right',
+	},
+	postTopicContainer: {
+		height: '24px',
+		width: '95%',
 	},
 });
 
@@ -128,9 +140,11 @@ export default function Topic(): JSX.Element {
 				rows={[
 					Separator(<ModeratorList moderators={info.moderators} />),
 					...page.posts,
+					Separator(),
 				]}
 			/>
 			{ pageControl }
+			<br />
 			<br />
 			<TopicReplyBar
 				forumId={info.topic.forum_id}
@@ -170,7 +184,22 @@ function PostReplyBar({
 	topicId,
 	postId,
 }: PostReplyBarProps): JSX.Element {
-	return <></>;
+	const styles = useStyles();
+	return (
+		<div className={styles.postReply}>
+			<a href={
+				`/index.cfm?page=newreply&topicID=${topicId}&replyID=${postId}#NEWMSG`
+			}>
+				<img src={Buttons.REPLY_POST} title='Reply to Post' />
+			</a>
+			{' '}
+			<a href={
+				`/index.cfm?page=newreply&topicID=${topicId}&quoteID=${postId}#NEWMSG`
+			}>
+				<img src={Buttons.REPLY_QUOTE} title='Quote Post' />
+			</a>
+		</div>
+	);
 }
 
 interface TopicReplyBarProps {
@@ -182,5 +211,18 @@ function TopicReplyBar({
 	forumId,
 	topicId,
 }: TopicReplyBarProps): JSX.Element {
-	return <></>;
+	const styles = useStyles();
+	return (
+		<div className={styles.postTopicContainer}>
+			<div className={styles.postTopicButtons}>
+				<a href={`/index.cfm?page=newtopic&forumID=${forumId}`}>
+					<img src={Buttons.NEW_TOPIC} />
+				</a>
+				{' '}
+				<a href={`/index.cfm?page=newreply&topicID=${topicId}#NEWMSG`}>
+					<img src={Buttons.REPLY_TOPIC} />
+				</a>
+			</div>
+		</div>
+	);
 }

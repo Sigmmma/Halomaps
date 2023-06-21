@@ -172,7 +172,7 @@ interface SeparatorProps {
  * This is essentially a big workaround to avoid "new" and allow the parent
  * Table to pass the column width into the actual Separator component.
  */
-export function Separator(content: ReactNode, showTop=false): SeparatorContainer {
+export function Separator(content?: ReactNode, showTop=false): SeparatorContainer {
 	return new SeparatorContainer({ content, showTop });
 }
 
