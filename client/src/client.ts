@@ -1,4 +1,10 @@
-import { ForumInfo, HomeData, TopicList } from '../../server/http/types';
+import {
+	ForumInfo,
+	HomeData,
+	TopicList,
+	TopicInfo,
+	TopicPostPage,
+} from '../../server/http/types';
 
 // TODO need to configure this somewhere
 const BASE_URL = 'http://localhost:9123';
@@ -39,6 +45,20 @@ export default class Client {
 
 	static async getForum(forumId: number): Promise<ForumInfo> {
 		return await Client.request(`/forum/${forumId}`);
+	}
+
+	static async getLatestTopic(forumId: number): Promise<TopicInfo> {
+		return await Client.request(`/topic/latest/${forumId}`);
+	}
+
+	static async getPosts(topicId: number, start?: number): Promise<TopicPostPage> {
+		return await Client.request(`/topic/${topicId}/posts`, {
+			start: start ? `${start}` : '',
+		});
+	}
+
+	static async getTopic(topicId: number): Promise<TopicInfo> {
+		return await Client.request(`/topic/${topicId}`);
 	}
 
 	static async getTopics(forumId: number, start?: number): Promise<TopicList> {

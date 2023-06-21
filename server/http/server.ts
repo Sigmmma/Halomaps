@@ -233,6 +233,7 @@ async function getTopicPosts(request: Request): Promise<TopicPostPage> {
 	});
 
 	return {
+		size: limit,
 		start: start + 1,
 		...postsAndUsers,
 	};

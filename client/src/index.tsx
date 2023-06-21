@@ -10,6 +10,7 @@ import useCaselessSearchParams from './hooks/useSearchParamsCaseInsensitive';
 import NotFound from './pages/404';
 import Forum from './pages/Forum';
 import Home from './pages/Home';
+import Topic from './pages/Topic';
 
 const useGlobalStyles = createUseStyles({
 	'@global': {
@@ -60,7 +61,7 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 	recent:         <Todo />,
 	register:       <Todo />,
 	search:         <Todo />,
-	topic:          <Todo />,
+	topic:          <Topic />,
 	userinfo:       <Todo />,
 };
 
