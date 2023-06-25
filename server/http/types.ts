@@ -1,4 +1,5 @@
 import {
+	AdjacentTopic,
 	Category,
 	Forum,
 	ForumStats,
@@ -37,7 +38,9 @@ export interface ForumInfo {
 	topics: number;
 }
 
-export interface TopicInfo {
+export type TopicInfo = AdjacentTopic & {
+	category: Category;
+	forum: Forum;
 	moderators: User[];
 	topic: TopicWithCount;
 }

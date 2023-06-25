@@ -4,6 +4,7 @@ import { ServerResponse } from 'http';
 import polka from 'polka';
 
 import * as database from '../database/server_fetch';
+import { TopicWithCount } from '../database/types';
 import {
 	CategoryWithForum,
 	ForumInfo,
@@ -190,16 +191,13 @@ async function getUser(request: Request) {
 	return 'TODO';
 }
 
+/**
+ * Fetches the Topic containing the most recent Post in the given Forum.
+ */
 async function getLatestTopic(request: Request): Promise<TopicInfo> {
 	const forumId = getNumberParam(request, FORUM_ID);
-
-	const moderators = await database.getModerators();
 	const topic = await database.getLatestTopic(forumId);
-
-	return {
-		moderators,
-		topic,
-	};
+	return _getTopicShared(topic);
 }
 
 /**
@@ -207,11 +205,20 @@ async function getLatestTopic(request: Request): Promise<TopicInfo> {
  */
 async function getTopic(request: Request): Promise<TopicInfo> {
 	const topicId = getNumberParam(request, TOPIC_ID);
-
-	const moderators = await database.getModerators();
 	const topic = await database.getTopic(topicId);
+	return _getTopicShared(topic);
+}
+
+async function _getTopicShared(topic: TopicWithCount): Promise<TopicInfo> {
+	const adjacent = await database.getAdjacentTopics(topic.id);
+	const moderators = await database.getModerators();
+	const forum = await database.getForum(topic.forum_id);
+	const category = (await database.getCategories(forum.category_id))[0];
 
 	return {
+		...adjacent,
+		category,
+		forum,
 		moderators,
 		topic,
 	};

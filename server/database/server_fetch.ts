@@ -5,6 +5,7 @@ import knexfile from './knexfile';
 const knex = setupKnex(knexfile);
 import Table from './tables';
 import {
+	AdjacentTopic,
 	Category,
 	Forum,
 	ForumStats,
@@ -51,9 +52,7 @@ export async function getCategories(categoryId?: number): Promise<Category[]> {
 	return (await query).map(row => parseDates(row, ['mirrored_at'])!);
 }
 
-/**
- * Gets a Forum by ID. Returned `undefined` if `forumId` matches no Forums.
- */
+/** Gets a Forum by ID. Returned `undefined` if `forumId` matches no Forums. */
 export async function getForum(forumId: number): Promise<Forum | undefined> {
 	const forum = await knex<Forum>(Table.FORUMS)
 		.first()
@@ -113,9 +112,7 @@ export async function getLatestPost(forumId?: number): Promise<PostAndUser | und
 	};
 }
 
-/**
- * Gets the most recent registered User.
- */
+/** Gets the most recent registered User. */
 export async function getNewestUser(): Promise<User> {
 	const user = await knex<User>(Table.USERS)
 		.first()
@@ -194,10 +191,77 @@ export async function getLatestTopic(forumId: number): Promise<TopicWithCount | 
 	const topicId = latest['id'];
 	return await getTopic(topicId);
 }
-
 /**
- * Gets a single Topic by ID
+ * Returns the IDs of the Topics that are adjacent to the given Topic.
+ *
+ * "Adjacent" means the next newest and previous oldest Topics. In other words,
+ * the Topics that display above and below the given Topic on the Forum list.
+ * This is determined by the time of the most recent Post in the Topic.
  */
+export async function getAdjacentTopics(topicId: number): Promise<AdjacentTopic> {
+	const LATEST_POSTS = 'latest_posts';
+	const POST_TIME = 'latest_post_time';
+	const ROW_NUM = 'row_num';
+	const SORTED_POSTS = 'sorted_posts';
+
+	const topic = await getTopic(topicId);
+
+	const latestPostGroupedByTopicQuery = knex<Post>(Table.POSTS)
+		.select('author_id', 'topic_id')
+		.max('created_at', { as: POST_TIME })
+		.groupBy('topic_id');
+
+	type SortedPostTopic = Topic
+		& Pick<Post, 'author_id'|'topic_id'>
+		& {
+			[POST_TIME]: number;
+			[ROW_NUM]: number;
+		};
+
+	// Newer / Older is determined by last post. We sort by last post and assign
+	// row_numbers so we can select the current Topic by ID, then subtract / add
+	// 1 to the row_num to get the newer / older Topic.
+
+	const sortedPostsQuery = knex<SortedPostTopic>(Table.TOPICS)
+		.with(LATEST_POSTS, latestPostGroupedByTopicQuery)
+		.select('id', 'name', 'topic_id', POST_TIME)
+		.rowNumber(ROW_NUM, { column: POST_TIME, order: 'desc' })
+		.innerJoin(LATEST_POSTS, join => join
+			.on(`${LATEST_POSTS}.topic_id`, '=', `${Table.TOPICS}.id`)
+		)
+		.where('forum_id', '=', topic.forum_id)
+		.orderBy(POST_TIME, 'desc');
+
+	const adjPartial = knex.queryBuilder<SortedPostTopic>()
+		.from(SORTED_POSTS)
+		.where('topic_id', '=', topicId)
+
+	type AdjTopic = Pick<SortedPostTopic, 'id'> & { [ROW_NUM]: number };
+
+	const adjRows: AdjTopic[] = await knex.queryBuilder<SortedPostTopic>()
+		.with(SORTED_POSTS, sortedPostsQuery)
+		.select('id', ROW_NUM)
+		.from(SORTED_POSTS)
+		.whereIn(ROW_NUM, sub => sub
+			.unionAll(adjPartial.clone().select(knex.raw(`${ROW_NUM} - 1`))) // Newer Topic
+			.unionAll(adjPartial.clone().select(ROW_NUM)) // Given reference Topic
+			.unionAll(adjPartial.clone().select(knex.raw(`${ROW_NUM} + 1`))) // Older Topic
+		);
+
+	// This query could be missing a newer or older Topic (or both) if the
+	// given Topic is already the newest or oldest. We detect this by using the
+	// given Topic's row_number as a reference.
+	const refTopic = adjRows.find(row => row.id === topicId);
+	const newTopic = adjRows.find(row => row[ROW_NUM] === refTopic[ROW_NUM] - 1);
+	const oldTopic = adjRows.find(row => row[ROW_NUM] === refTopic[ROW_NUM] + 1);
+
+	return {
+		topicNewerId: newTopic?.id,
+		topicOlderId: oldTopic?.id,
+	};
+}
+
+/** Gets a single Topic by ID. */
 export async function getTopic(topicId: number): Promise<TopicWithCount | undefined> {
 	const row = await knex<Topic>(Table.TOPICS)
 		.first()

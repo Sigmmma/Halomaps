@@ -83,6 +83,11 @@ export type TopicWithPostInfo = Topic & {
 	post_count: number;
 };
 
+export interface AdjacentTopic {
+	topicNewerId?: number;
+	topicOlderId?: number;
+}
+
 export interface TopicPosts {
 	posts: Post[];
 	users: User[];
