@@ -3,7 +3,7 @@ import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 import { useAsync } from 'react-use';
 
-import { Post, User } from '../../../server/database/types';
+import { AdjacentTopic, Post, User } from '../../../server/database/types';
 import { TopicInfo, TopicPostPage } from '../../../server/http/types';
 
 import Client from '../client';
@@ -41,7 +41,15 @@ const useStyles = createUseStyles({
 		float: 'right',
 	},
 	postTopicContainer: {
-		height: '24px',
+		height: '27px',
+		width: '95%',
+	},
+	threadLinks: {
+		marginLeft: 'auto',
+		marginRight: 'auto',
+		width: 'fit-content',
+	},
+	threadLinksContainer: {
 		width: '95%',
 	},
 });
@@ -100,6 +108,8 @@ export default function Topic(): JSX.Element {
 				onRender: (post, idx) => <>
 					<PostInfoBar
 						post={post}
+						// Row list has one separator as index 0, so index
+						// coincidentally can double as the post number.
 						postNum={idx}
 						totalPosts={info.topic.posts}
 					/>
@@ -125,24 +135,25 @@ export default function Topic(): JSX.Element {
 			/>
 		);
 
+		const pathParts = [
+			{
+				name: info.topic.name,
+				locked: info.topic.locked,
+				url: `/index.cfm?page=topic&topicID=${info.topic.id}`,
+			},
+		];
+
+		const rows = [
+			Separator(<ModeratorList moderators={info.moderators} />),
+			...page.posts,
+			Separator(),
+		];
+
 		return <>
-			<Path parts={[
-				{
-					name: info.topic.name,
-					locked: info.topic.locked,
-					url: 'TODO',
-				},
-			]} />
+			<Path parts={pathParts} />
 			<br />
 			{ pageControl }
-			<Table
-				columns={columns}
-				rows={[
-					Separator(<ModeratorList moderators={info.moderators} />),
-					...page.posts,
-					Separator(),
-				]}
-			/>
+			<Table columns={columns} rows={rows} />
 			{ pageControl }
 			<br />
 			<br />
@@ -150,6 +161,7 @@ export default function Topic(): JSX.Element {
 				forumId={info.topic.forum_id}
 				topicId={info.topic.id}
 			/>
+			<ThreadLinks {...info} />
 		</>
 	}} />;
 }
@@ -222,6 +234,30 @@ function TopicReplyBar({
 				<a href={`/index.cfm?page=newreply&topicID=${topicId}#NEWMSG`}>
 					<img src={Buttons.REPLY_TOPIC} />
 				</a>
+			</div>
+		</div>
+	);
+}
+
+function ThreadLinks({
+	topicNewerId,
+	topicOlderId,
+}: AdjacentTopic): JSX.Element {
+	const styles = useStyles();
+	return (
+		<div className={styles.threadLinksContainer}>
+			<div className={styles.threadLinks}>
+				{topicOlderId && (
+					<a href={`/index.cfm?page=topic&topicID=${topicOlderId}`}>
+						Previous Older Thread
+					</a>
+				)}
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				{topicNewerId && (
+					<a href={`/index.cfm?page=topic&topicID=${topicNewerId}`}>
+						Next newer Thread
+					</a>
+				)}
 			</div>
 		</div>
 	);
