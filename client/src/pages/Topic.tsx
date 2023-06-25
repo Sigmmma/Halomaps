@@ -12,7 +12,7 @@ import { UserPanel } from '../components/User';
 import { RelDate } from '../components/Date';
 import ModeratorList from '../components/Moderator';
 import { CurPage, TopicPageControl } from '../components/PageControl';
-import Path from '../components/Path';
+import Path, { PathPart } from '../components/Path';
 import { Column, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Buttons } from '../images';
@@ -112,7 +112,15 @@ export default function Topic(): JSX.Element {
 			/>
 		);
 
-		const pathParts = [
+		const pathParts: PathPart[] = [
+			{
+				name: info.category.name,
+				url: `/index.cfm?page=home&categoryID=${info.category.id}`,
+			},
+			{
+				name: info.forum.name,
+				url: `/index.cfm?page=forum&forumID=${info.forum.id}`,
+			},
 			{
 				name: info.topic.name,
 				locked: info.topic.locked,

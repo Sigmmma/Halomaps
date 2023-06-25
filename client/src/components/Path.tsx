@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 
 import { Buttons, Icons } from '../images';
 
-interface PathPart {
+export interface PathPart {
 	// Typescript enforces this as a boolean, but it may show up as a number
 	// due to some database silliness. We should always do the !! trick on this.
 	locked?: boolean;
