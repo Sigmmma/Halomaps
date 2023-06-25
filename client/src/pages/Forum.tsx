@@ -111,16 +111,18 @@ export default function Forum(): JSX.Element {
 			...list.topics,
 		]} />
 
-		<TopicPageControl
-			count={info.topics}
-			pageSize={TOPICS_PER_PAGE}
-			start={list.start}
-			buildUrl={(page: number): string => {
-				const start = ((page - 1) * TOPICS_PER_PAGE) + 1;
-				return `/index.cfm?page=forum&forumID=${forumId}&start=${start}`
-			}}
-		/>
-		<br/>
+		{info.topics > TOPICS_PER_PAGE && <>
+			<TopicPageControl
+				count={info.topics}
+				pageSize={TOPICS_PER_PAGE}
+				start={list.start}
+				buildUrl={(page: number): string => {
+					const start = ((page - 1) * TOPICS_PER_PAGE) + 1;
+					return `/index.cfm?page=forum&forumID=${forumId}&start=${start}`
+				}}
+			/>
+			<br />
+		</>}
 	</>}/>;
 }
 
@@ -139,10 +141,6 @@ function TopicIcon({ topic }: TopicProp): JSX.Element {
 		:                                        Icons.TOPIC;
 	return <img src={image} className={styles.icon} />;
 }
-
-// FIXME something about our query is wrong.
-// It's returning stuff from the wrong forum.
-// It's also returning multiples, maybe? actually no, I think it's just getting pinned posts from other forums.
 
 function TopicInfo({ topic }: TopicProp): JSX.Element {
 	const styles = useStyles();

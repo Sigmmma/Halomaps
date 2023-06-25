@@ -154,8 +154,10 @@ export default function Topic(): JSX.Element {
 			<br />
 			{ pageControl }
 			<Table columns={columns} rows={rows} />
-			{ pageControl }
-			<br />
+			{ pageControl && <>
+				{pageControl}
+				<br />
+			</> }
 			<br />
 			<TopicReplyBar
 				forumId={info.topic.forum_id}
