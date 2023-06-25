@@ -23,34 +23,11 @@ interface TopicInfoResponse {
 }
 
 const useStyles = createUseStyles({
-	infoBar: {
-		backgroundColor: '#C6DDF0',
-		padding: '10px',
-	},
 	messageArea: {
 		paddingBottom: '30px',
 		paddingLeft: '10px',
 		paddingRight: '10px',
 		paddingTop: '10px',
-	},
-	postReply: {
-		float: 'right',
-		width: '300px',
-	},
-	postTopicButtons: {
-		float: 'right',
-	},
-	postTopicContainer: {
-		height: '27px',
-		width: '95%',
-	},
-	threadLinks: {
-		marginLeft: 'auto',
-		marginRight: 'auto',
-		width: 'fit-content',
-	},
-	threadLinksContainer: {
-		width: '95%',
 	},
 });
 
@@ -163,10 +140,14 @@ export default function Topic(): JSX.Element {
 				forumId={info.topic.forum_id}
 				topicId={info.topic.id}
 			/>
-			<ThreadLinks {...info} />
+			<TopicLinks {...info} />
 		</>
 	}} />;
 }
+
+//******************************************************************************
+// PostInfoBar
+//******************************************************************************
 
 interface PostInfoBarProps {
 	post: Post;
@@ -174,14 +155,21 @@ interface PostInfoBarProps {
 	totalPosts: number;
 }
 
+const useInfoBarStyles = createUseStyles({
+	container: {
+		backgroundColor: '#C6DDF0',
+		padding: '10px',
+	},
+});
+
 function PostInfoBar({
 	post,
 	postNum,
 	totalPosts,
 }: PostInfoBarProps): JSX.Element {
-	const styles = useStyles();
+	const styles = useInfoBarStyles();
 	return (
-		<div className={styles.infoBar}>
+		<div className={styles.container}>
 			<b>Posted: <RelDate date={post.created_at} /></b>
 			&nbsp;&nbsp;&nbsp;&nbsp;
 			Msg. {postNum} of {totalPosts}
@@ -189,18 +177,29 @@ function PostInfoBar({
 	);
 }
 
+//******************************************************************************
+// PostReplyBar
+//******************************************************************************
+
 interface PostReplyBarProps {
 	topicId: number;
 	postId: number;
 }
 
+const usePostReplyBarStyles = createUseStyles({
+	container: {
+		float: 'right',
+		width: '300px',
+	},
+});
+
 function PostReplyBar({
 	topicId,
 	postId,
 }: PostReplyBarProps): JSX.Element {
-	const styles = useStyles();
+	const styles = usePostReplyBarStyles()
 	return (
-		<div className={styles.postReply}>
+		<div className={styles.container}>
 			<a href={
 				`/index.cfm?page=newreply&topicID=${topicId}&replyID=${postId}#NEWMSG`
 			}>
@@ -216,19 +215,33 @@ function PostReplyBar({
 	);
 }
 
+//******************************************************************************
+// TopicReplyBar
+//******************************************************************************
+
 interface TopicReplyBarProps {
 	forumId: number;
 	topicId: number;
 }
 
+const useTopicReplyBarStyles = createUseStyles({
+	buttons: {
+		float: 'right',
+	},
+	container: {
+		height: '27px',
+		width: '95%',
+	},
+});
+
 function TopicReplyBar({
 	forumId,
 	topicId,
 }: TopicReplyBarProps): JSX.Element {
-	const styles = useStyles();
+	const styles = useTopicReplyBarStyles();
 	return (
-		<div className={styles.postTopicContainer}>
-			<div className={styles.postTopicButtons}>
+		<div className={styles.container}>
+			<div className={styles.buttons}>
 				<a href={`/index.cfm?page=newtopic&forumID=${forumId}`}>
 					<img src={Buttons.NEW_TOPIC} />
 				</a>
@@ -241,14 +254,29 @@ function TopicReplyBar({
 	);
 }
 
-function ThreadLinks({
+//******************************************************************************
+// TopicLinks
+//******************************************************************************
+
+const useLinkStyles = createUseStyles({
+	container: {
+		width: '95%',
+	},
+	links: {
+		marginLeft: 'auto',
+		marginRight: 'auto',
+		width: 'fit-content',
+	},
+});
+
+function TopicLinks({
 	topicNewerId,
 	topicOlderId,
 }: AdjacentTopic): JSX.Element {
-	const styles = useStyles();
+	const styles = useLinkStyles();
 	return (
-		<div className={styles.threadLinksContainer}>
-			<div className={styles.threadLinks}>
+		<div className={styles.container}>
+			<div className={styles.links}>
 				{topicOlderId && (
 					<a href={`/index.cfm?page=topic&topicID=${topicOlderId}`}>
 						Previous Older Thread
