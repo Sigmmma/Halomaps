@@ -4,6 +4,8 @@ import { createUseStyles } from 'react-jss';
 import { Buttons, Icons } from '../images';
 
 interface PathPart {
+	// Typescript enforces this as a boolean, but it may show up as a number
+	// due to some database silliness. We should always do the !! trick on this.
 	locked?: boolean;
 	name: string;
 	url: string;
@@ -50,7 +52,7 @@ export default function Path({ parts }: PathProps): JSX.Element {
 					<Fragment key={idx}>
 						»
 
-						{part.locked && (
+						{!!part.locked && (
 							<img src={Icons.LOCK} className={styles.lock} />
 						)}
 
