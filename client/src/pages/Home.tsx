@@ -12,6 +12,7 @@ import ModeratorList from '../components/Moderator';
 import ForumStats from '../components/Stats';
 import { Column, Separator, Table } from '../components/Table';
 import { UserLink } from '../components/User';
+import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Icons } from '../images';
 
 interface TableRowInfo {
@@ -28,7 +29,10 @@ const useStyles = createUseStyles(() => ({
 }));
 
 export default function Home(): JSX.Element {
-	const state = useAsync(async () => await Client.getHome(), []);
+	const [params] = useCaselessSearchParams();
+	const categoryId = params.getInt('categoryID') ?? undefined;
+
+	const state = useAsync(async () => await Client.getHome(categoryId), [categoryId]);
 	const styles = useStyles();
 
 	const COLUMNS: Column<TableRowInfo>[] = [
