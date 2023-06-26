@@ -12,6 +12,8 @@ import {
 
 export type ForumWithPost = Forum & {
 	latest?: PostAndUser;
+	postCount: number;
+	topicCount: number;
 };
 
 export type CategoryWithForum = Category & {

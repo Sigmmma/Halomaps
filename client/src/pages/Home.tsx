@@ -46,13 +46,13 @@ export default function Home(): JSX.Element {
 			header: 'Topics',
 			blueBg: true,
 			width: '50px',
-			onRender: () => 'TODO',
+			onRender: (info) => info.forum.topicCount,
 		},
 		{
 			header: 'Posts',
 			blueBg: true,
 			width: '50px',
-			onRender: () => 'TODO',
+			onRender: (info) => info.forum.postCount,
 		},
 		{
 			header: 'Last Post',

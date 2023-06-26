@@ -76,13 +76,22 @@ async function getHome(request: Request): Promise<HomeData> {
 	}
 
 	// Also comes sorted from the database.
-	const forums: ForumWithPost[] = await database.getForums(categoryId);
-	const stats                   = await database.getStats();
-	const moderators              = await database.getModerators();
+	const forums     = await database.getForums(categoryId);
+	const stats      = await database.getStats();
+	const moderators = await database.getModerators();
 
-	for await (const forum of forums) {
-		forum.latest = await database.getLatestPost(forum.id);
-	}
+	const forumsWithPost: ForumWithPost[] = await Promise.all(forums.map(async forum => {
+		const latest     = await database.getLatestPost(forum.id);
+		const postCount  = await database.getForumPostCount(forum.id);
+		const topicCount = await database.getForumTopicCount(forum.id);
+
+		return {
+			...forum,
+			latest,
+			postCount,
+			topicCount,
+		};
+	}));
 
 	// Enables faster Category lookup in following forums.forEach
 	const categoryMap = categories.reduce(
@@ -92,7 +101,7 @@ async function getHome(request: Request): Promise<HomeData> {
 
 	// Split Forums into lists in their respective Categories.
 	// Forums and Categories are already sorted, so this is automatically sorted too.
-	forums.forEach(forum => {
+	forumsWithPost.forEach(forum => {
 		const category = categoryMap.get(forum.category_id);
 
 		if (!category.forums) {

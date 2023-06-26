@@ -60,6 +60,31 @@ export async function getForum(forumId: number): Promise<Forum | undefined> {
 	return parseDates(forum, ['mirrored_at']);
 }
 
+/** Gets the number of Posts in the given Forum. */
+export async function getForumPostCount(forumId: number): Promise<number> {
+	const COUNT = 'postcount';
+	const countRow = await knex<Post>(Table.POSTS)
+		.first()
+		.count('*', { as: COUNT })
+		.innerJoin(Table.TOPICS, join => join
+			.on(`${Table.TOPICS}.id`, '=', 'topic_id')
+		)
+		.where(`${Table.TOPICS}.forum_id`, '=', forumId);
+
+	return Number.parseInt(`${countRow[COUNT]}`);
+}
+
+/** Gets the number of Topics in the given Forum. */
+export async function getForumTopicCount(forumId: number): Promise<number> {
+	const COUNT = 'rowcount';
+	const countRow = await knex<Topic>(Table.TOPICS)
+		.first()
+		.count('*', { as: COUNT })
+		.where('forum_id', '=', forumId);
+
+	return Number.parseInt(`${countRow[COUNT]}`);
+}
+
 /**
  * Gets a list of Forums by Category ID.
  * - If `categoryId` is `undefined`, all Forums are returned.
