@@ -23,8 +23,22 @@ interface TopicInfoResponse {
 }
 
 const useStyles = createUseStyles({
+	// Handle styles baked into post content
+	'@global': {
+		'.QUOTE': {
+			backgroundColor: '#C6DDF0',
+			borderColor: 'white',
+			borderStyle: 'solid',
+			borderWidth: '1px',
+			fontSize: '11px',
+			padding: '5px',
+			margin: '5px',
+		},
+	},
 	messageArea: {
-		paddingBottom: '30px',
+		lineHeight: '18px',
+		minHeight: '150px',
+		paddingBottom: '45px',
 		paddingLeft: '10px',
 		paddingRight: '10px',
 		paddingTop: '10px',
