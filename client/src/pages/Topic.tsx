@@ -88,9 +88,9 @@ export default function Topic(): JSX.Element {
 			{
 				header: <>
 					Topic: {info.topic.name}{' '}
-					({info.topic.posts} messages,{' '}
+					({info.topic.replies} messages,{' '}
 					<CurPage
-						count={info.topic.posts}
+						count={info.topic.replies}
 						pageSize={page.size}
 						start={page.start}
 					/>)
@@ -102,7 +102,7 @@ export default function Topic(): JSX.Element {
 						// Row list has one separator as index 0, so index
 						// coincidentally can double as the post number.
 						postNum={idx}
-						totalPosts={info.topic.posts}
+						totalPosts={info.topic.replies}
 					/>
 
 					<div className={styles.messageArea}>
@@ -114,9 +114,9 @@ export default function Topic(): JSX.Element {
 			},
 		];
 
-		const pageControl = (info.topic.posts > page.size) && (
+		const pageControl = (info.topic.replies > page.size) && (
 			<TopicPageControl
-				count={info.topic.posts}
+				count={info.topic.replies}
 				pageSize={page.size}
 				start={page.start}
 				buildUrl={(pageNum) => {

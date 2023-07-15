@@ -17,6 +17,7 @@ import {
 	TopicWithCount,
 	TopicWithPostInfo,
 	User,
+	UserWithPostCount,
 } from './types';
 
 interface Paginated {
@@ -32,6 +33,7 @@ type TopicQuery = Paginated & {
 	forumId: number;
 }
 
+export const DEFAULT_USER_POST_COUNT = 20;
 export const MAX_POST_PAGE_SIZE = 35;
 export const MAX_TOPIC_PAGE_SIZE = 50;
 
@@ -52,12 +54,18 @@ export async function getCategories(categoryId?: number): Promise<Category[]> {
 	return (await query).map(row => parseDates(row, ['mirrored_at'])!);
 }
 
-/** Gets a Forum by ID. Returned `undefined` if `forumId` matches no Forums. */
+/** Gets a Forum by ID. Returns `undefined` if `forumId` matches no Forums. */
 export async function getForum(forumId: number): Promise<Forum | undefined> {
-	const forum = await knex<Forum>(Table.FORUMS)
-		.first()
-		.where('id', '=', forumId);
-	return parseDates(forum, ['mirrored_at']);
+	const forums = await getForumsById([forumId]);
+	return forums[0];
+}
+
+/** Gets a list of Forums matching the given IDs. */
+export async function getForumsById(forumIds: number[]): Promise<Forum[]> {
+	const forums = await knex<Forum>(Table.FORUMS)
+		.select()
+		.whereIn('id', forumIds);
+	return forums.map(forum => parseDates(forum, ['mirrored_at']));
 }
 
 /** Gets the number of Posts in the given Forum. */
@@ -90,7 +98,7 @@ export async function getForumTopicCount(forumId: number): Promise<number> {
  * - If `categoryId` is `undefined`, all Forums are returned.
  * - If `categoryId` matches no Category, an empty list is returned.
  */
-export async function getForums(categoryId?: number): Promise<Forum[]> {
+export async function getForumsByCategory(categoryId?: number): Promise<Forum[]> {
 	const query = knex<Forum>(Table.FORUMS)
 		.select()
 		.orderBy('sort_index', 'asc');
@@ -188,6 +196,29 @@ export async function getPosts({
 		posts: posts.map(post => parseDates(post, ['created_at', 'mirrored_at'])),
 		users: users.map(user => parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at'])),
 	};
+}
+
+/** Gets the total number of posts. */
+export async function getBoardPostCount(): Promise<number> {
+	const NUM = 'num_posts';
+	const count = await knex<Post>(Table.POSTS)
+		.count('*', { as: NUM })
+		.first();
+	return Number.parseInt(`${count[NUM]}`);
+}
+
+/** Gets the most recent Posts for the given User. */
+export async function getUserPosts(
+	userId: number,
+	limit = DEFAULT_USER_POST_COUNT,
+): Promise<Post[]> {
+	const posts = await knex<Post>(Table.POSTS)
+		.select()
+		.where('author_id', '=', userId)
+		.limit(limit)
+		.orderBy('created_at', 'desc');
+
+	return posts.map(post => parseDates(post, ['created_at', 'mirrored_at']));
 }
 
 /** Gets all of the arbitrary stats in the database. */
@@ -288,24 +319,32 @@ export async function getAdjacentTopics(topicId: number): Promise<AdjacentTopic>
 
 /** Gets a single Topic by ID. */
 export async function getTopic(topicId: number): Promise<TopicWithCount | undefined> {
-	const row = await knex<Topic>(Table.TOPICS)
-		.first()
-		.where('id', '=', topicId);
-	const topic = parseDates(row, ['created_at', 'mirrored_at']);
+	const topics = await getTopicsById([topicId]);
+	return topics[0];
+}
 
-	if (!topic) return undefined;
+/** Gets a list of Topics whose IDs are in the given list. */
+export async function getTopicsById(topicIds: number[]): Promise<TopicWithCount[]> {
+	const topics = await knex<Topic>(Table.TOPICS)
+		.select()
+		.whereIn('id', topicIds);
 
-	const NUM_POSTS = 'num_posts';
-	const postCountRow = await knex<Post>(Table.POSTS)
-		.first()
-		.count('*', { as: NUM_POSTS })
-		.where('topic_id', '=', topicId);
-	const posts = postCountRow[NUM_POSTS] as number;
+	const REPLIES = 'replies';
+	const postCountRows = await knex<Post>(Table.POSTS)
+		.select('topic_id')
+		.count('*', { as: REPLIES })
+		.groupBy('topic_id')
+		.whereIn('topic_id', topicIds);
 
-	return {
-		...topic,
-		posts,
-	};
+	const countMap = postCountRows.reduce(
+		(map, count) => map.set(count.topic_id, Number.parseInt(`${count[REPLIES]}`)),
+		new Map<number, number>()
+	);
+
+	return topics.map(topic => ({
+		...parseDates(topic, ['created_at', 'mirrored_at']),
+		replies: countMap.get(topic.id),
+	}));
 }
 
 /**
@@ -313,7 +352,7 @@ export async function getTopic(topicId: number): Promise<TopicWithCount | undefi
  * in a list of Topics, so the returned Topics also include number of Posts and
  * most recent Post.
  */
-export async function getTopics({
+export async function getTopicsInForum({
 	forumId,
 	limit,
 	start
@@ -365,11 +404,12 @@ export async function getTopics({
 
 /** Fetches the number of Topics in the given Forum. */
 export async function getTopicCount(forumId: number): Promise<number> {
+	const NUM = 'topic_count';
 	const row = await knex<Topic>(Table.TOPICS)
 		.first()
-		.count()
+		.count('*', { as: NUM })
 		.where('forum_id', '=', forumId);
-	return row['count(*)'] as number;
+	return Number.parseInt(`${row[NUM]}`);
 }
 
 /** Fetches a User by ID. */
@@ -379,6 +419,27 @@ export async function getUser(userId: number): Promise<User | undefined> {
 		.where('id', '=', userId);
 
 	return parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at']);
+}
+
+/** Fetches a User and their total Post count by ID. */
+export async function getUserWithPostCount(
+	userId: number,
+): Promise<UserWithPostCount | undefined> {
+	const user = await getUser(userId);
+
+	if (!user) return undefined;
+
+	const NUM = 'post_count';
+	const countRow = await knex<Post>(Table.POSTS)
+		.count('*', { as: NUM })
+		.first()
+		.where('author_id', '=', userId);
+	const total_posts = Number.parseInt(`${countRow[NUM]}`);
+
+	return {
+		...user,
+		total_posts,
+	};
 }
 
 /** Constrains a value between the min and max. */

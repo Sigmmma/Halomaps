@@ -73,7 +73,7 @@ export interface PostAndUser {
 }
 
 export type TopicWithCount = Topic & {
-	posts: number;
+	replies: number;
 }
 
 export type TopicWithPostInfo = Topic & {
@@ -92,3 +92,7 @@ export interface TopicPosts {
 	posts: Post[];
 	users: User[];
 }
+
+export type UserWithPostCount = User & {
+	total_posts: number;
+};

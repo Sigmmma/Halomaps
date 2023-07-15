@@ -3,11 +3,13 @@ import {
 	Category,
 	Forum,
 	ForumStats,
+	Post,
 	PostAndUser,
 	TopicPosts,
 	TopicWithCount,
 	TopicWithPostInfo,
 	User,
+	UserWithPostCount,
 } from '../database/types';
 
 export type ForumWithPost = Forum & {
@@ -50,4 +52,12 @@ export type TopicInfo = AdjacentTopic & {
 export type TopicPostPage = TopicPosts & {
 	size: number;
 	start: number;
+}
+
+export interface UserInfo {
+	board_post_count: number;
+	forums: Forum[];
+	posts: Post[];
+	topics: TopicWithCount[];
+	user: UserWithPostCount;
 }

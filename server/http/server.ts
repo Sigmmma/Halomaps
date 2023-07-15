@@ -13,6 +13,7 @@ import {
 	TopicList,
 	TopicInfo,
 	TopicPostPage,
+	UserInfo,
 } from './types';
 const info = require('../package.json');
 
@@ -35,6 +36,7 @@ server.use('/', (request, _response, next) => {
 const CATEGORY_ID = 'categoryId';
 const FORUM_ID = 'forumId';
 const TOPIC_ID = 'topicId';
+const USER_ID = 'userId';
 
 server.get(`/forum/:${FORUM_ID}`, wrapHandler(getForum));
 server.get(`/forum/:${FORUM_ID}/topics`, wrapHandler(getForumTopics));
@@ -43,6 +45,7 @@ server.get('/info', wrapHandler(getInfo));
 server.get(`/topic/:${TOPIC_ID}`, wrapHandler(getTopic));
 server.get(`/topic/:${TOPIC_ID}/posts`, wrapHandler(getTopicPosts));
 server.get(`/topic/latest/:${FORUM_ID}`, wrapHandler(getLatestTopic));
+server.get(`/user/:${USER_ID}`, wrapHandler(getUser));
 
 /**
  * Return info for AGPL compliance.
@@ -76,7 +79,7 @@ async function getHome(request: Request): Promise<HomeData> {
 	}
 
 	// Also comes sorted from the database.
-	const forums     = await database.getForums(categoryId);
+	const forums     = await database.getForumsByCategory(categoryId);
 	const stats      = await database.getStats();
 	const moderators = await database.getModerators();
 
@@ -181,7 +184,7 @@ async function getForumTopics(request: Request): Promise<TopicList> {
 	// Database is 0-indexed while the client is 1-indexed
 	const start = (getNumberQuery(request, 'start') ?? 1) - 1;
 
-	const topics = await database.getTopics({
+	const topics = await database.getTopicsInForum({
 		forumId,
 		limit,
 		start,
@@ -194,10 +197,34 @@ async function getForumTopics(request: Request): Promise<TopicList> {
 }
 
 /**
- *
+ * Fetches a User and their most recent posts.
  */
-async function getUser(request: Request) {
-	return 'TODO';
+async function getUser(request: Request): Promise<UserInfo> {
+	const userId = getNumberParam(request, USER_ID);
+
+	const board_post_count = await database.getBoardPostCount();
+	const posts = await database.getUserPosts(userId);
+	const user = await database.getUserWithPostCount(userId);
+
+	const topicIds = posts.reduce(
+		(set, post) => set.add(post.topic_id),
+		new Set<number>(),
+	);
+	const topics = await database.getTopicsById([...topicIds]);
+
+	const forumIds = topics.reduce(
+		(set, topic) => set.add(topic.forum_id),
+		new Set<number>()
+	);
+	const forums = await database.getForumsById([...forumIds]);
+
+	return {
+		board_post_count,
+		forums,
+		posts,
+		topics,
+		user,
+	};
 }
 
 /**
