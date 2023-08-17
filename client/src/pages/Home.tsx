@@ -10,7 +10,7 @@ import AsyncContent from '../components/AsyncContent';
 import { RelDate } from '../components/Date';
 import ModeratorList from '../components/Moderator';
 import ForumStats from '../components/Stats';
-import { Column, Separator, Table } from '../components/Table';
+import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserLink } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Icons } from '../images';
@@ -74,7 +74,10 @@ export default function Home(): JSX.Element {
 	return <AsyncContent state={state} render={(data) => <>
 		<Table columns={COLUMNS} rows={
 			data.categories.flatMap(category => [
-				Separator(category.name, true),
+				InlineElement(<Separator
+					content={category.name}
+					showTop
+				/>),
 				...category.forums?.map(forum => ({
 					forum,
 					moderators: data.moderators,

@@ -39,13 +39,13 @@ export type Column<T> = Pick<
 	blueBg?: boolean;
 	header?: ReactNode;
 	span?: number;
-	onRender: (row: T, index: number, rows: (SeparatorContainer | T)[]) => ReactNode;
+	onRender: (row: T, index: number, rows: (InlineTableElement | T)[]) => ReactNode;
 }
 
 interface TableProps<T> {
 	className?: string;
 	columns: Column<T>[];
-	rows: (SeparatorContainer | T)[];
+	rows: (InlineTableElement | T)[];
 }
 
 export function Table<T>({
@@ -108,13 +108,10 @@ function TableBody<T>({
 	return (
 		<tbody>
 			{rows.map((row, idx) => (
-				row instanceof SeparatorContainer
-					? <TableSeparator
-						colSpan={columns.length}
-						content={row.content}
-						key={idx}
-						showTop={row.showTop}
-					/>
+				row instanceof InlineTableElement
+					? <tr><td colSpan={columns.length}>
+						{row.content}
+					</td></tr>
 					: <TableRow
 						allRows={rows}
 						columns={columns}
@@ -128,7 +125,7 @@ function TableBody<T>({
 }
 
 type TableRowProps<T> = Pick<TableProps<T>, 'columns'> & {
-	allRows: (T | SeparatorContainer)[];
+	allRows: (T | InlineTableElement)[];
 	row: T;
 	index: number;
 };
@@ -172,33 +169,31 @@ interface SeparatorProps {
  * This is essentially a big workaround to avoid "new" and allow the parent
  * Table to pass the column width into the actual Separator component.
  */
-export function Separator(content?: ReactNode, showTop=false): SeparatorContainer {
-	return new SeparatorContainer({ content, showTop });
+export function InlineElement(content?: ReactNode): InlineTableElement {
+	return new InlineTableElement(content)
 }
 
 /**
  * Goofy container that passes a runtime instanceof check so that callers can
  * combine separators with their actual table row data.
  */
-class SeparatorContainer {
+class InlineTableElement {
 	content: ReactNode;
-	showTop?: boolean;
 
-	constructor({ content, showTop }: SeparatorProps) {
+	constructor(content: ReactNode) {
 		this.content = content;
-		this.showTop = showTop;
 	}
 }
 
 const useSeparatorStyles = createUseStyles({
 	separator: {
 		backgroundImage: `url(${Design.BAR_LIGHT})`,
-		paddingTop: '2px',
-		paddingBottom: '0px',
-		verticalAlign: 'middle',
+		paddingTop: '1px',
 	},
 	rawContent: {
-		height: '18px',
+		paddingTop: '2px',
+		height: '17px',
+		marginBottom: '-1px',
 	},
 	topLink: {
 		float: 'right',
@@ -207,24 +202,19 @@ const useSeparatorStyles = createUseStyles({
 	},
 	topIcon: {
 		marginLeft: '5px',
-		verticalAlign: 'middle',
 	},
 });
 
-function TableSeparator({
+export function Separator({
 	content,
-	colSpan,
 	showTop,
-}: SeparatorProps & { colSpan: number }): JSX.Element {
+}: SeparatorProps): JSX.Element {
 	const styles = useSeparatorStyles();
 	return (
-		<tr><td
-			className={classNames(styles.separator, {
+		<div className={classNames(styles.separator, {
 				// Set default height for basic text, otherwise fit to content.
 				[styles.rawContent]: typeof content !== 'object',
-			})}
-			colSpan={colSpan}
-		>
+		})}>
 			<b>{content}</b>
 
 			{showTop && (
@@ -233,6 +223,6 @@ function TableSeparator({
 					<img className={styles.topIcon} src={Icons.TOP} />
 				</a>
 			)}
-		</td></tr>
+		</div>
 	);
 }

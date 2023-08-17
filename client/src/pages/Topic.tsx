@@ -13,7 +13,7 @@ import { RelDate } from '../components/Date';
 import ModeratorList from '../components/Moderator';
 import { CurPage, TopicPageControl } from '../components/PageControl';
 import Path, { PathPart } from '../components/Path';
-import { Column, Separator, Table } from '../components/Table';
+import { Column, InlineElement, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Buttons } from '../images';
 
@@ -143,9 +143,11 @@ export default function Topic(): JSX.Element {
 		];
 
 		const rows = [
-			Separator(<ModeratorList moderators={info.moderators} />),
+			InlineElement(<Separator
+				content={<ModeratorList moderators={info.moderators} />}
+			/>),
 			...page.posts,
-			Separator(),
+			InlineElement(<Separator/>),
 		];
 
 		return <>

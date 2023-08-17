@@ -10,7 +10,7 @@ import { RelDate } from '../components/Date';
 import ModeratorList from '../components/Moderator';
 import { OverviewPageControl, TopicPageControl } from '../components/PageControl';
 import Path from '../components/Path';
-import { Column, Separator, Table } from '../components/Table';
+import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserLink } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Icons } from '../images';
@@ -25,7 +25,6 @@ const useStyles = createUseStyles({
 	},
 	moderator: {
 		marginTop: '-1px',
-		paddingBottom: '1px',
 		paddingLeft: '4px',
 	},
 	pin: {
@@ -104,10 +103,10 @@ export default function Forum(): JSX.Element {
 		]} />
 
 		<Table className={styles.table} columns={COLUMNS} rows={[
-			Separator(<ModeratorList
+			InlineElement(<Separator content={<ModeratorList
 				className={styles.moderator}
 				moderators={info.moderators}
-			/>),
+		/>}/>),
 			...list.topics,
 		]} />
 
