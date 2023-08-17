@@ -20,6 +20,11 @@ const useStyles = createUseStyles({
 	},
 });
 
+interface UserAvatarProps {
+	user: User;
+	gap?: number;
+}
+
 interface UserLinkProps {
 	user: Pick<User, 'name'|'id'>;
 }
@@ -28,8 +33,22 @@ interface UserPanelProps {
 	user: User;
 }
 
+export function UserAvatar({
+	user,
+	gap = 0,
+}: UserAvatarProps): JSX.Element {
+	return <>
+		{/* TODO need to load static content somehow */}
+		{user.avatar && <img src={user.avatar} />}
+		{Array(gap).fill(null).map(() => <br />)}
+		{user.quote && <div>{user.quote}</div>}
+	</>;
+}
+
 export function UserLink({ user }: UserLinkProps): JSX.Element {
-	return <a href='TODO'>{user.name}</a>;
+	return <a href={`index.cfm?page=userinfo&userid=${user.id}`}>
+		{user.name}
+	</a>;
 }
 
 export function UserPanel({ user }: UserPanelProps): JSX.Element {
@@ -47,11 +66,6 @@ export function UserPanel({ user }: UserPanelProps): JSX.Element {
 			Joined: <DayDate date={user.joined_at} />
 		</div>
 
-		{/* TODO need to load static content somehow */}
-		{user.avatar && <img src={user.avatar} />}
-
-		<br /><br />
-
-		{user.quote && <div>{user.quote}</div>}
+		<UserAvatar user={user} gap={2} />
 	</div>;
 }
