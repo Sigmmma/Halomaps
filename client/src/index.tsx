@@ -11,6 +11,7 @@ import NotFound from './pages/404';
 import Forum from './pages/Forum';
 import Home from './pages/Home';
 import Topic from './pages/Topic';
+import User from './pages/User';
 
 const useGlobalStyles = createUseStyles({
 	'@global': {
@@ -47,23 +48,24 @@ createRoot(document.getElementById('app-root')!).render(<App />);
 */
 const ROUTER = createBrowserRouter([
 	{ path: '*',          element: <NotFound /> },
-	{ path: '/',          element: <Navigate to='/index.cfm?page=home' />},
-	{ path: '/index.cfm', element: <QueryRouter />},
+	{ path: '/',          element: <Navigate to='/index.cfm?page=home' /> },
+	{ path: '/index.cfm', element: <QueryRouter /> },
 ]);
 
 const QUERY_ELEMS: Record<string, JSX.Element> = {
-	archiveinfo:    <Todo />,
-	forgotpassword: <Todo />,
-	forum:          <Forum />,
-	home:           <Home />,
-	login:          <Todo />,
-	members:        <Todo />,
-	newreply:       <Todo />,
-	recent:         <Todo />,
-	register:       <Todo />,
-	search:         <Todo />,
-	topic:          <Topic />,
-	userinfo:       <Todo />,
+	archiveinfo:       <Todo />,
+	forgotpassword:    <Todo />,
+	forum:             <Forum />,
+	home:              <Home />,
+	login:             <Todo />,
+	members:           <Todo />,
+	newreply:          <Todo />,
+	privateMessageNew: <Todo />,
+	recent:            <Todo />,
+	register:          <Todo />,
+	search:            <Todo />,
+	topic:             <Topic />,
+	userinfo:          <User />,
 };
 
 function App(): JSX.Element {

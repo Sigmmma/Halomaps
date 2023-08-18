@@ -5,11 +5,15 @@ interface DateProps {
 	date: Date | string;
 }
 
+export const FORUM_CLOSE_DATE = DateTime.fromISO('2023-01-31').toJSDate();
+
+/** Displays date as a day. See {@link toDay}. */
 export function DayDate({ date }: DateProps): JSX.Element {
 	const dateTime = convertToDateTime(date);
 	return <>{toDay(dateTime)}</>;
 }
 
+/** Displays date relative to today. See {@link toAbsoluteDate}. */
 export function RelDate({ date }: DateProps): JSX.Element {
 	const dateTime = convertToDateTime(date);
 	return isToday(dateTime)     ? <b>Today @ {toTime(dateTime)}</b>
@@ -21,6 +25,16 @@ function convertToDateTime(date: Date | string): DateTime {
 	return date instanceof Date
 		? DateTime.fromJSDate(date)
 		: DateTime.fromISO(date);
+}
+
+export function durationInDays(
+	from: Date | string,
+	to: Date | string = new Date(),
+): number {
+	const fromDate = convertToDateTime(from);
+	const toDate = convertToDateTime(to);
+
+	return fromDate.diff(toDate, 'days').days;
 }
 
 function isToday(dateTime: DateTime): boolean {
