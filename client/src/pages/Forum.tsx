@@ -103,10 +103,12 @@ export default function Forum(): JSX.Element {
 		]} />
 
 		<Table className={styles.table} columns={COLUMNS} rows={[
-			InlineElement(<Separator content={<ModeratorList
-				className={styles.moderator}
-				moderators={info.moderators}
-		/>}/>),
+			new InlineElement(<Separator content={
+				<ModeratorList
+					className={styles.moderator}
+					moderators={info.moderators}
+				/>
+			}/>),
 			...list.topics,
 		]} />
 

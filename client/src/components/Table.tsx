@@ -39,13 +39,13 @@ export type Column<T> = Pick<
 	blueBg?: boolean;
 	header?: ReactNode;
 	span?: number;
-	onRender: (row: T, index: number, rows: (InlineTableElement | T)[]) => ReactNode;
+	onRender: (row: T, index: number, rows: (InlineElement | T)[]) => ReactNode;
 }
 
 interface TableProps<T> {
 	className?: string;
 	columns: Column<T>[];
-	rows: (InlineTableElement | T)[];
+	rows: (InlineElement | T)[];
 }
 
 export function Table<T>({
@@ -108,7 +108,7 @@ function TableBody<T>({
 	return (
 		<tbody>
 			{rows.map((row, idx) => (
-				row instanceof InlineTableElement
+				row instanceof InlineElement
 					? <tr><td colSpan={columns.length}>
 						{row.content}
 					</td></tr>
@@ -125,7 +125,7 @@ function TableBody<T>({
 }
 
 type TableRowProps<T> = Pick<TableProps<T>, 'columns'> & {
-	allRows: (T | InlineTableElement)[];
+	allRows: (T | InlineElement)[];
 	row: T;
 	index: number;
 };
@@ -163,21 +163,10 @@ interface SeparatorProps {
 }
 
 /**
- * The thing callers actually call to add a separator to a Table.
- * This should be added to the Table's row data.
- *
- * This is essentially a big workaround to avoid "new" and allow the parent
- * Table to pass the column width into the actual Separator component.
- */
-export function InlineElement(content?: ReactNode): InlineTableElement {
-	return new InlineTableElement(content)
-}
-
-/**
  * Goofy container that passes a runtime instanceof check so that callers can
- * combine separators with their actual table row data.
+ * combine arbitrary ReactElements with their actual table row data.
  */
-class InlineTableElement {
+export class InlineElement {
 	content: ReactNode;
 
 	constructor(content: ReactNode) {

@@ -74,7 +74,7 @@ export default function Home(): JSX.Element {
 	return <AsyncContent state={state} render={(data) => <>
 		<Table columns={COLUMNS} rows={
 			data.categories.flatMap(category => [
-				InlineElement(<Separator
+				new InlineElement(<Separator
 					content={category.name}
 					showTop
 				/>),
@@ -138,6 +138,7 @@ function ForumInfo({ info }: ForumInfoProps): JSX.Element {
 			</a></b>
 
 			<div className={styles.description}>
+				{/* TODO Set padding */}
 				{forum.description}
 
 				<ModeratorList

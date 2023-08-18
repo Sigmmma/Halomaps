@@ -43,6 +43,10 @@ const useStyles = createUseStyles({
 		paddingRight: '10px',
 		paddingTop: '10px',
 	},
+	moderators: {
+		marginTop: '-1px',
+		paddingLeft: '4px',
+	},
 });
 
 export default function Topic(): JSX.Element {
@@ -143,11 +147,14 @@ export default function Topic(): JSX.Element {
 		];
 
 		const rows = [
-			InlineElement(<Separator
-				content={<ModeratorList moderators={info.moderators} />}
-			/>),
+			new InlineElement(<Separator content={
+				<ModeratorList
+					className={styles.moderators}
+					moderators={info.moderators}
+				/>
+			}/>),
 			...page.posts,
-			InlineElement(<Separator/>),
+			new InlineElement(<Separator/>),
 		];
 
 		return <>
