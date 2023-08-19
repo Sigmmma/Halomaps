@@ -16,6 +16,7 @@ import Path, { PathPart } from '../components/Path';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Buttons } from '../images';
+import { idMap } from '../util';
 
 interface TopicInfoResponse {
 	info: TopicInfo;
@@ -75,10 +76,7 @@ export default function Topic(): JSX.Element {
 	});
 
 	return <AsyncContent state={topicQuery} render={({ info, page }) => {
-		const authorMap = page.users.reduce(
-			(map, user) => map.set(user.id, user),
-			new Map<number, User>()
-		);
+		const authorMap = idMap(page.users);
 
 		const columns: Column<Post>[] = [
 			{

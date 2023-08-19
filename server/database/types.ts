@@ -3,8 +3,11 @@ interface Mirrored {
 	mirrored_at: Date;
 }
 
-export type User = Mirrored & {
+export interface HasID {
 	id: number;
+}
+
+export type User = Mirrored & HasID & {
 	name: string;
 	joined_at: Date;
 	last_visit_at: Date;
@@ -18,14 +21,12 @@ export type User = Mirrored & {
 	games_played: string | null;
 }
 
-export type Category = Mirrored & {
-	id: number;
+export type Category = Mirrored & HasID & {
 	sort_index: number;
 	name: string;
 }
 
-export type Forum = Mirrored & {
-	id: number;
+export type Forum = Mirrored & HasID & {
 	sort_index: number;
 	name: string;
 	locked: boolean;
@@ -38,8 +39,7 @@ export type Stat = Mirrored & {
 	value: number;
 }
 
-export type Topic = Mirrored & {
-	id: number;
+export type Topic = Mirrored & HasID & {
 	name: string;
 	views: number;
 	pinned: boolean;
@@ -51,8 +51,7 @@ export type Topic = Mirrored & {
 	created_at: Date;
 }
 
-export type Post = Mirrored & {
-	id: number;
+export type Post = Mirrored & HasID & {
 	author_id: number;
 	topic_id: number;
 	created_at: Date;
