@@ -4,6 +4,7 @@ import {
 	TopicList,
 	TopicInfo,
 	TopicPostPage,
+	UserInfo,
 } from '../../server/http/types';
 
 // TODO need to configure this somewhere
@@ -65,5 +66,9 @@ export default class Client {
 		return await Client.request(`/forum/${forumId}/topics`, {
 			start: start ? `${start}` : '',
 		});
+	}
+
+	static async getUser(userId: number): Promise<UserInfo> {
+		return await Client.request(`/user/${userId}`);
 	}
 }

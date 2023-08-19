@@ -1,47 +1,58 @@
-import React, { ReactNode, useCallback, useMemo } from 'react';
+import React, { JSX, ReactNode, useCallback, useMemo } from 'react';
 import { createUseStyles } from 'react-jss';
+import { useAsync } from 'react-use';
 
-import { Post, User, UserWithPostCount } from '../../../server/database/types';
+import {
+	Forum,
+	Post,
+	TopicWithCount,
+	User,
+	UserWithPostCount,
+} from '../../../server/database/types';
+import { mapById } from '../../../server/util';
 
+import Client from '../client';
+import AsyncContent from '../components/AsyncContent';
 import { FORUM_CLOSE_DATE, RelDate, durationInDays } from '../components/Date';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserAvatar } from '../components/User';
-
-// TODO obviously remove and replace this with real data
-const TEMP_TEST_USER: UserWithPostCount = {
-	age: 'older than your mother',
-	avatar: null,
-	games_played: 'all of them',
-	id: 123,
-	interests: 'fuckin bitches',
-	joined_at: new Date(),
-	last_visit_at: new Date(),
-	location: 'everywhere',
-	mirrored_at: new Date(),
-	name: 'Cool dude',
-	occupation: 'fuckin bitches professionally',
-	quote: 'I fuck bitches',
-	special: 'certified bitch fucker',
-	total_posts: 1000,
-};
+import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 
 export default function User(): JSX.Element {
-	const COLUMNS: Column<Post>[] = [{
-		header: `Viewing User Profile for: ${TEMP_TEST_USER.name}`,
-		onRender: (post) => <UserPost post={post}/>,
-	}];
+	const [params] = useCaselessSearchParams();
+	const userId = params.getInt('userID');
 
-	const rows: (Post | InlineElement)[] = [
-		new InlineElement(<UserProfile user={TEMP_TEST_USER} />),
-		new InlineElement(<UserSummary user={TEMP_TEST_USER} boardPostCount={1400} />),
-	];
+	const userQuery = useAsync(async () => {
+		if (userId == null) throw new Error('Missing userID');
+		return await Client.getUser(userId);
+	}, [userId]);
 
-	return (
-		<Table
-			columns={COLUMNS}
-			rows={rows}
-		/>
-	);
+	return <AsyncContent state={userQuery} render={(userInfo) => {
+		const { user, board_post_count, forums, posts, topics } = userInfo;
+		const forumMap = mapById(forums);
+		const topicMap = mapById(topics);
+
+		const COLUMNS: Column<Post>[] = [{
+			header: `Viewing User Profile for: ${user.name}`,
+			onRender: (post) => {
+				const topic = topicMap.get(post.topic_id)!;
+				const forum = forumMap.get(topic.forum_id)!;
+				return <UserPost post={post} forum={forum} topic={topic} />;
+			},
+		}];
+
+		const rows: (Post | InlineElement)[] = [
+			new InlineElement(<UserProfile user={user} />),
+			new InlineElement(<UserSummary
+				boardPostCount={board_post_count}
+				recentPostCount={posts.length}
+				user={user}
+			/>),
+			...posts,
+		];
+
+		return <Table columns={COLUMNS} rows={rows} />;
+	}} />;
 }
 
 //******************************************************************************
@@ -184,10 +195,13 @@ function UserContact({ user }: UserProfileProps): JSX.Element {
 
 interface UserSummaryProps {
 	boardPostCount: number;
+	recentPostCount: number;
 	user: UserWithPostCount;
 }
 
 interface UserPostProps {
+	forum: Forum;
+	topic: TopicWithCount;
 	post: Post;
 }
 
@@ -203,6 +217,7 @@ const usePostStyles = createUseStyles({
 /** The User Post Statistics right below the profile info. */
 function UserSummary({
 	boardPostCount,
+	recentPostCount,
 	user,
 }: UserSummaryProps): JSX.Element {
 	const styles = usePostStyles();
@@ -218,6 +233,10 @@ function UserSummary({
 			out of {boardPostCount} total posts ({postPercent.toFixed(2)}%)
 			in {Math.floor(accountAgeDays)} days
 			({postsPerDay.toFixed(2)} posts per day).
+		</div>
+		<br />
+		<div className={styles.summary}>
+			{recentPostCount} Most recent posts:
 		</div>
 	</>;
 }

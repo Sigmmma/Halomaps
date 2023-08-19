@@ -34,7 +34,7 @@ export function durationInDays(
 	const fromDate = convertToDateTime(from);
 	const toDate = convertToDateTime(to);
 
-	return fromDate.diff(toDate, 'days').days;
+	return toDate.diff(fromDate, 'days').days;
 }
 
 function isToday(dateTime: DateTime): boolean {
