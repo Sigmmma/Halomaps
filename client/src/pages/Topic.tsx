@@ -3,8 +3,9 @@ import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 import { useAsync } from 'react-use';
 
-import { AdjacentTopic, Post, User } from '../../../server/database/types';
+import { AdjacentTopic, Post } from '../../../server/database/types';
 import { TopicInfo, TopicPostPage } from '../../../server/http/types';
+import { mapById } from '../../../server/util';
 
 import Client from '../client';
 import AsyncContent from '../components/AsyncContent';
@@ -16,7 +17,6 @@ import Path, { PathPart } from '../components/Path';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Buttons } from '../images';
-import { idMap } from '../util';
 
 interface TopicInfoResponse {
 	info: TopicInfo;
@@ -76,7 +76,7 @@ export default function Topic(): JSX.Element {
 	});
 
 	return <AsyncContent state={topicQuery} render={({ info, page }) => {
-		const authorMap = idMap(page.users);
+		const authorMap = mapById(page.users);
 
 		const columns: Column<Post>[] = [
 			{

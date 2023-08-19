@@ -15,6 +15,7 @@ import {
 	TopicPostPage,
 	UserInfo,
 } from './types';
+import { mapById } from '../util';
 const info = require('../package.json');
 
 /**
@@ -97,10 +98,7 @@ async function getHome(request: Request): Promise<HomeData> {
 	}));
 
 	// Enables faster Category lookup in following forums.forEach
-	const categoryMap = categories.reduce(
-		(map, category) => map.set(category.id, category),
-		new Map<number, CategoryWithForum>()
-	);
+	const categoryMap = mapById(categories);
 
 	// Split Forums into lists in their respective Categories.
 	// Forums and Categories are already sorted, so this is automatically sorted too.
@@ -206,16 +204,10 @@ async function getUser(request: Request): Promise<UserInfo> {
 	const posts = await database.getUserPosts(userId);
 	const user = await database.getUserWithPostCount(userId);
 
-	const topicIds = posts.reduce(
-		(set, post) => set.add(post.topic_id),
-		new Set<number>(),
-	);
+	const topicIds = new Set(posts.map(post => post.topic_id));
 	const topics = await database.getTopicsById([...topicIds]);
 
-	const forumIds = topics.reduce(
-		(set, topic) => set.add(topic.forum_id),
-		new Set<number>()
-	);
+	const forumIds = new Set(topics.map(topic => topic.forum_id));
 	const forums = await database.getForumsById([...forumIds]);
 
 	return {
@@ -354,7 +346,7 @@ function writeJson(response: ServerResponse, code: number, data: unknown): void 
 	}).end(JSON.stringify(data));
 }
 
-/** Wrapper that restores the ability to use "throw" in handlers. */
+/** Wrapper that restores the ability to use `throw` in handlers. */
 function wrapHandler(handler: (request: Request) => unknown): RequestHandler {
 	return async (request, response) => {
 		try {
