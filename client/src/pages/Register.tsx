@@ -1,4 +1,4 @@
-import React, { JSX, ReactNode } from 'react';
+import React, { JSX, ReactNode, useState } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import Button from '../components/Button';
@@ -32,7 +32,7 @@ const REQUIRED_FIELDS: TableRow[] = [
 	['Username',      <Input maxLength={25} size={40} />],
 	['Email Address', <Input maxLength={25} size={40} />],
 	['',              <EmailCheck />],
-	['Password', 'Random password will be sent to above email account. You can change it later.']
+	['Password', 'Random password will be sent to above email account. You can change it later.'],
 ];
 
 const OPTIONAL_FIELDS: TableRow[] = [
@@ -42,12 +42,12 @@ const OPTIONAL_FIELDS: TableRow[] = [
 	['Interests',              <Input maxLength={100} size={60} />],
 	['Your Age',               <Input maxLength={100} size={60} />],
 	['What Games do you play', <Input maxLength={100} size={60} />],
-]
+];
 
 export default function Register(): JSX.Element {
 	const styles = useStyles();
 	return (
-		<div className={styles.container}>
+		<form className={styles.container}>
 			<HeaderBar className={styles.header} content='Registration Information' />
 			<Separator className={styles.separator} content='Required Information' />
 			<BasicTable fields={REQUIRED_FIELDS} />
@@ -56,7 +56,7 @@ export default function Register(): JSX.Element {
 			<Separator className={styles.separator} />
 			<Verify />
 			<HeaderBar />
-		</div>
+		</form>
 	);
 }
 
@@ -69,6 +69,11 @@ interface BasicTableProps {
 }
 
 const useElementStyles = createUseStyles({
+	alert: {
+		color: 'red',
+		marginBottom: '-18px',
+		marginTop: '3px',
+	},
 	checkbox: {
 		marginTop: '-10px',
 	},
@@ -116,7 +121,7 @@ function EmailCheck(): JSX.Element {
 	const styles = useElementStyles();
 	return (
 		<div className={styles.checkbox}>
-			<input id={EMAIL} type='checkbox' checked />
+			<input id={EMAIL} type='checkbox' defaultChecked />
 			<label htmlFor={EMAIL}>
 				Show my email in public profile?
 			</label>
@@ -126,19 +131,26 @@ function EmailCheck(): JSX.Element {
 
 function Verify(): JSX.Element {
 	const styles = useElementStyles();
+	const [showWarning, setShowWarning] = useState(false);
+
 	return (
 		<div className={styles.verify}>
 			Enter Verify code:<br />
+
 			{[Captcha.U, Captcha.W, Captcha.A, Captcha.Y, Captcha.D]
 				.map((src, idx) => <img src={src} key={idx} />
-			)}
-			<br />
+			)}<br />
+
 			<Input size={20} />
+
 			<div className={styles.padding}>
-				<Button text='Submit' />
+				<Button text='Submit' onClick={() => setShowWarning(true)} />
 				{' '}
-				{/* TODO this actually needs to clear all the fields */}
-				<Button text='Reset' />
+				<Button text='Reset' type='reset' />
+			</div>
+
+			<div className={styles.alert} hidden={!showWarning}>
+				Registration is disabled on this archive!
 			</div>
 		</div>
 	);

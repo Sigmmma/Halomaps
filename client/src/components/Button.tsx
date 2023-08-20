@@ -1,7 +1,13 @@
-import React, { JSX } from 'react';
+import React, { ButtonHTMLAttributes, DetailedHTMLProps, JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
-interface ButtonProps {
+type ButtonProps = Pick<
+	DetailedHTMLProps<
+		ButtonHTMLAttributes<HTMLButtonElement>,
+		HTMLButtonElement
+	>,
+	'type'
+> & {
 	text: string;
 	onClick?: () => void;
 }
@@ -23,6 +29,7 @@ const useStyles = createUseStyles({
 
 export default function Button({
 	text,
+	type = 'button',
 	onClick,
 }: ButtonProps): JSX.Element {
 	const styles = useStyles();
@@ -30,7 +37,7 @@ export default function Button({
 		<button
 			className={styles.button}
 			onClick={onClick}
-			type='button'
+			type={type}
 		>
 			{text}
 		</button>
