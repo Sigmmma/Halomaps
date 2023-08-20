@@ -62,7 +62,7 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 	login:             <Login />,
 	members:           <Todo />,
 	newreply:          <Todo />,
-	privateMessageNew: <Todo />,
+	privatemessagenew: <Todo />,
 	recent:            <Todo />,
 	register:          <Register />,
 	search:            <Todo />,
@@ -82,7 +82,7 @@ function App(): JSX.Element {
 
 function QueryRouter(): JSX.Element {
 	const [params] = useCaselessSearchParams();
-	const page = params.get('page');
+	const page = params.get('page')?.toLowerCase();
 	return page
 		? QUERY_ELEMS[page] ?? <NotFound />
 		: <Navigate to='/index.cfm?page=home' />;
