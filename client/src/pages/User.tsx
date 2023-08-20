@@ -14,6 +14,7 @@ import { mapById } from '../../../server/util';
 import Client from '../client';
 import AsyncContent from '../components/AsyncContent';
 import { FORUM_CLOSE_DATE, RelDate, durationInDays } from '../components/Date';
+import PostContent from '../components/Post';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserAvatar } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
@@ -207,6 +208,12 @@ interface UserPostProps {
 
 const PADDING_LEFT = '10px';
 const usePostStyles = createUseStyles({
+	indent: {
+		paddingLeft: PADDING_LEFT,
+	},
+	path: {
+		backgroundColor: '#C6DDF0',
+	},
 	summary: {
 		fontWeight: 'bold',
 		marginTop: '3px',
@@ -242,7 +249,30 @@ function UserSummary({
 }
 
 /** A single Post from the user, including the Topic, Forum, and Post count. */
-function UserPost({ post }: UserPostProps): JSX.Element {
-	// TODO implement this
-	return <></>;
+function UserPost({
+	forum,
+	post,
+	topic,
+}: UserPostProps): JSX.Element {
+	const styles = usePostStyles();
+	return (
+		<div className={styles.indent}>
+			<div className={styles.path}>
+				<a href={`/index.cfm?page=forum&forumID=${forum.id}`}>
+					{forum.name}
+				</a>
+				{' » '}
+				<a href={`/index.cfm?page=topic&topicID=${topic.id}`}>
+					{topic.name}
+				</a>
+				{' '}
+				<i><RelDate date={post.created_at} /></i>
+				{' '}
+				(Total replies: {topic.replies})
+			</div>
+
+			<PostContent content={post.content} />
+			<br />
+		</div>
+	);
 }

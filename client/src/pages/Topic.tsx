@@ -1,4 +1,3 @@
-import parseHTML from 'html-react-parser';
 import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 import { useAsync } from 'react-use';
@@ -14,6 +13,7 @@ import { RelDate } from '../components/Date';
 import ModeratorList from '../components/Moderator';
 import { CurPage, TopicPageControl } from '../components/PageControl';
 import Path, { PathPart } from '../components/Path';
+import PostContent from '../components/Post';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Buttons } from '../images';
@@ -24,29 +24,15 @@ interface TopicInfoResponse {
 }
 
 const useStyles = createUseStyles({
-	// Handle styles baked into post content
-	'@global': {
-		'.QUOTE': {
-			backgroundColor: '#C6DDF0',
-			borderColor: 'white',
-			borderStyle: 'solid',
-			borderWidth: '1px',
-			fontSize: '11px',
-			padding: '5px',
-			margin: '5px',
-		},
-	},
-	messageArea: {
-		lineHeight: '18px',
-		minHeight: '150px',
-		paddingBottom: '45px',
-		paddingLeft: '10px',
-		paddingRight: '10px',
-		paddingTop: '10px',
-	},
 	moderators: {
 		marginTop: '-1px',
 		paddingLeft: '4px',
+	},
+	post: {
+		marginLeft: '10px',
+		minHeight: '150px',
+		paddingBottom: '45px',
+		paddingRight: '10px',
 	},
 });
 
@@ -106,11 +92,7 @@ export default function Topic(): JSX.Element {
 						postNum={idx}
 						totalPosts={info.topic.replies}
 					/>
-
-					<div className={styles.messageArea}>
-						{parseHTML(post.content)}
-					</div>
-
+					<PostContent content={post.content} className={styles.post} />
 					<PostReplyBar postId={post.id} topicId={post.topic_id} />
 				</>,
 			},
