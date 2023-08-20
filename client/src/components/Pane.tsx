@@ -6,6 +6,7 @@ import { createUseStyles } from 'react-jss';
 import { Design } from '../images';
 
 type PaneProps = {
+	className?: string;
 	title: string;
 	type?: PaneType;
 	width?: Property.Width<(string & {}) | number>; // Stolen from react-jss for type info
@@ -30,7 +31,6 @@ const useStyles = createUseStyles({
 		marginRight: 'auto',
 		marginTop: '50px',
 		padding: '1px',
-		textAlign: 'center',
 		width: 'fit-content',
 	},
 	text: {
@@ -43,6 +43,7 @@ const useStyles = createUseStyles({
 		color: 'white',
 		fontWeight: 'bold',
 		height: '17px',
+		textAlign: 'center',
 	},
 	error:   { backgroundImage: `url(${Design.BAR_DARK_ERR})`  },
 	normal:  { backgroundImage: `url(${Design.BAR_DARK})`      },
@@ -54,6 +55,7 @@ const useStyles = createUseStyles({
 
 export function Pane({
 	children,
+	className,
 	title,
 	type = PaneType.NORMAL,
 	width,
@@ -61,7 +63,7 @@ export function Pane({
 	const styles = useStyles();
 	return (
 		<div
-			className={classNames(styles.container, {
+			className={classNames(styles.container, className, {
 				[styles.normalBg]:  type === PaneType.NORMAL,
 				[styles.warningBg]: type === PaneType.WARNING,
 				[styles.errorBg]:   type === PaneType.ERROR,
