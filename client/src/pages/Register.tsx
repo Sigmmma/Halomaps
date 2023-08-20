@@ -4,6 +4,7 @@ import { createUseStyles } from 'react-jss';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { HeaderBar, Separator } from '../components/Table';
+import { Captcha } from '../images';
 
 type TableRow = [string, ReactNode];
 
@@ -128,8 +129,10 @@ function Verify(): JSX.Element {
 	return (
 		<div className={styles.verify}>
 			Enter Verify code:<br />
-			{/* TODO need each letter for captcha here */}
-			<img />
+			{[Captcha.U, Captcha.W, Captcha.A, Captcha.Y, Captcha.D]
+				.map((src, idx) => <img src={src} key={idx} />
+			)}
+			<br />
 			<Input size={20} />
 			<div className={styles.padding}>
 				<Button text='Submit' />

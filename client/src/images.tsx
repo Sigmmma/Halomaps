@@ -5,6 +5,14 @@ export const Buttons = {
 	REPLY_TOPIC: image('buttons/reply.gif'),
 };
 
+export const Captcha = {
+	A: image('captcha/A.gif'),
+	D: image('captcha/D.gif'),
+	U: image('captcha/U.gif'),
+	W: image('captcha/W.gif'),
+	Y: image('captcha/Y.gif'),
+};
+
 export const Design = {
 	BAR_DARK:      image('design/darkbg.gif'),
 	BAR_DARK_ERR:  image('design/darkbgred.gif'),
