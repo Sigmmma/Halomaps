@@ -1,7 +1,13 @@
-import React, { JSX } from 'react';
+import React, { DetailedHTMLProps, InputHTMLAttributes, JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
-interface InputProps {
+type InputProps = Pick<
+	DetailedHTMLProps<
+		InputHTMLAttributes<HTMLInputElement>,
+		HTMLInputElement
+	>,
+	'type'
+> & {
 	maxLength?: number;
 	size: number;
 }
@@ -18,12 +24,13 @@ const useStyles = createUseStyles({
 export default function Input({
 	maxLength,
 	size,
+	type = 'text',
 }: InputProps): JSX.Element {
 	const styles = useStyles();
 	return (
 		<input
 			className={styles.input}
-			type='text'
+			type={type}
 			maxLength={maxLength}
 			size={size}
 		/>
