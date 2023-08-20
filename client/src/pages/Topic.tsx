@@ -25,8 +25,8 @@ interface TopicInfoResponse {
 
 const useStyles = createUseStyles({
 	moderators: {
-		marginTop: '-1px',
-		paddingLeft: '4px',
+		height: '16px',
+		paddingLeft: '5px',
 	},
 	post: {
 		marginLeft: '10px',

@@ -26,6 +26,10 @@ const useStyles = createUseStyles(() => ({
 		paddingTop: '9px',
 		verticalAlign: 'middle',
 	},
+	separator: {
+		paddingTop: '2px',
+		height: '17px',
+	},
 }));
 
 export default function Home(): JSX.Element {
@@ -75,6 +79,7 @@ export default function Home(): JSX.Element {
 		<Table columns={COLUMNS} rows={
 			data.categories.flatMap(category => [
 				new InlineElement(<Separator
+					className={styles.separator}
 					content={category.name}
 					showTop
 				/>),

@@ -11,14 +11,7 @@ const useTableStyles = createUseStyles({
 		textAlign: 'center',
 	},
 	header: {
-		backgroundImage: `url(${Design.BAR_DARK})`,
-		color: 'white',
-		fontWeight: 'bold',
-		height: '18px',
-		textAlign: 'center',
-		paddingBottom: '0px',
-		paddingTop: '2px',
-		whiteSpace: 'nowrap',
+		padding: '0px',
 	},
 	normal: {
 		backgroundColor: '#F2F2F2',
@@ -93,7 +86,7 @@ function TableHeader<T>({
 						colSpan={column.span}
 						key={idx}
 					>
-						{column.header}
+						<HeaderBar content={column.header} />
 					</th>
 				))
 			}
@@ -105,20 +98,29 @@ function TableBody<T>({
 	columns,
 	rows,
 }: TableProps<T>): JSX.Element {
+	const styles = useTableStyles();
 	return (
 		<tbody>
 			{rows.map((row, idx) => (
 				row instanceof InlineElement
-					? <tr key={idx}><td colSpan={columns.length}>
-						{row.content}
-					</td></tr>
-					: <TableRow
-						allRows={rows}
-						columns={columns}
-						index={idx}
-						key={idx}
-						row={row}
-					/>
+					? (
+						<tr key={idx}>
+							<td
+								className={styles.header}
+								colSpan={columns.length}
+							>
+								{row.content}
+							</td>
+						</tr>
+					) : (
+						<TableRow
+							allRows={rows}
+							columns={columns}
+							index={idx}
+							key={idx}
+							row={row}
+						/>
+					)
 			))}
 		</tbody>
 	);
@@ -154,11 +156,15 @@ function TableRow<T>({
 }
 
 //******************************************************************************
-// Horizontal Separator
+// Horizontal Separator and Header
 //******************************************************************************
 
-interface SeparatorProps {
+interface HeaderBarProps {
+	className?: string;
 	content?: ReactNode;
+}
+
+type SeparatorProps = HeaderBarProps & {
 	showTop?: boolean;
 }
 
@@ -174,37 +180,76 @@ export class InlineElement {
 	}
 }
 
+const useHeaderStyles = createUseStyles({
+	header: {
+		backgroundImage: `url(${Design.BAR_DARK})`,
+		color: 'white',
+		display: 'table',
+		fontWeight: 'bold',
+		height: '18px',
+		textAlign: 'center',
+		paddingBottom: '0px',
+		paddingTop: '2px',
+		whiteSpace: 'nowrap',
+		width: '100%',
+	},
+});
+
+const CONTENT_WIDTH = '90%'
 const useSeparatorStyles = createUseStyles({
+	content: {
+		display: 'inline-block',
+		fontWeight: 'bold',
+		width: CONTENT_WIDTH,
+	},
+	rawContent: {
+		paddingLeft: '1px',
+		paddingTop: '3px',
+	},
 	separator: {
 		backgroundImage: `url(${Design.BAR_LIGHT})`,
 		paddingTop: '1px',
 	},
-	rawContent: {
-		paddingTop: '2px',
-		height: '17px',
-		marginBottom: '-1px',
-	},
 	topLink: {
-		float: 'right',
+		display: 'inline-block',
 		fontSize: '10px',
-		marginRight: '2px',
+		// AKA "float: right" that plays nice with verticalAlign
+		marginLeft: `calc(100% - ${CONTENT_WIDTH} - 32px)`,
+		verticalAlign: 'middle',
 	},
 	topIcon: {
 		marginLeft: '5px',
 	},
 });
 
+/** Blue header bar. */
+export function HeaderBar({
+	className,
+	content,
+}: HeaderBarProps): JSX.Element {
+	const styles = useHeaderStyles();
+	return (
+		<div className={classNames(styles.header, className)}>
+			{content}
+		</div>
+	);
+}
+
+/** Gray separator bar, with optional "to top of page" link. */
 export function Separator({
+	className,
 	content,
 	showTop,
 }: SeparatorProps): JSX.Element {
 	const styles = useSeparatorStyles();
 	return (
-		<div className={classNames(styles.separator, {
+		<div className={styles.separator}>
+			<div className={classNames(styles.content, className, {
 				// Set default height for basic text, otherwise fit to content.
 				[styles.rawContent]: typeof content !== 'object',
-		})}>
-			<b>{content}</b>
+			})}>
+				{content}
+			</div>
 
 			{showTop && (
 				<a className={styles.topLink} href='#TOP'>

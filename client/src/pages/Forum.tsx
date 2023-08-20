@@ -24,8 +24,8 @@ const useStyles = createUseStyles({
 		display: 'block',
 	},
 	moderator: {
-		marginTop: '-1px',
-		paddingLeft: '4px',
+		height: '16px',
+		paddingLeft: '5px',
 	},
 	pin: {
 		marginLeft: '4px',
