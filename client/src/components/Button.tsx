@@ -1,3 +1,4 @@
+import classNames from 'classnames';
 import React, { ButtonHTMLAttributes, DetailedHTMLProps, JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
@@ -8,6 +9,7 @@ type ButtonProps = Pick<
 	>,
 	'type'
 > & {
+	className?: string;
 	text: string;
 	onClick?: () => void;
 }
@@ -28,6 +30,7 @@ const useStyles = createUseStyles({
 });
 
 export default function Button({
+	className,
 	text,
 	type = 'button',
 	onClick,
@@ -35,7 +38,7 @@ export default function Button({
 	const styles = useStyles();
 	return (
 		<button
-			className={styles.button}
+			className={classNames(styles.button, className)}
 			onClick={onClick}
 			type={type}
 		>

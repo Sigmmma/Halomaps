@@ -11,6 +11,7 @@ import NotFound from './pages/404';
 import Forum from './pages/Forum';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Password from './pages/Password';
 import Register from './pages/Register';
 import Topic from './pages/Topic';
 import User from './pages/User';
@@ -56,7 +57,7 @@ const ROUTER = createBrowserRouter([
 
 const QUERY_ELEMS: Record<string, JSX.Element> = {
 	archiveinfo:       <Todo />,
-	forgotpassword:    <Todo />,
+	forgotpassword:    <Password />,
 	forum:             <Forum />,
 	home:              <Home />,
 	login:             <Login />,

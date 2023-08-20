@@ -5,8 +5,8 @@ import FieldTable, { TableRow } from '../components/FieldTable';
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
 import Input from '../components/Input';
-import Warning from '../components/Warning';
 import { Pane } from '../components/Pane';
+import Warning from '../components/Warning';
 
 const useStyles = createUseStyles({
 	center: {
