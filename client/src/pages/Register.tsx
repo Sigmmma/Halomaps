@@ -2,6 +2,7 @@ import React, { JSX, ReactNode, useState } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import Button from '../components/Button';
+import Checkbox from '../components/Checkbox';
 import Input from '../components/Input';
 import { HeaderBar, Separator } from '../components/Table';
 import { Captcha } from '../images';
@@ -30,8 +31,12 @@ const useStyles = createUseStyles({
 
 const REQUIRED_FIELDS: TableRow[] = [
 	['Username',      <Input maxLength={25} size={40} />],
-	['Email Address', <Input maxLength={25} size={40} />],
-	['',              <EmailCheck />],
+	['Email Address', (
+		<div>
+			<Input maxLength={25} size={40} />
+			<Checkbox defaultChecked label='Show my email in public profile?'/>
+		</div>
+	)],
 	['Password', 'Random password will be sent to above email account. You can change it later.'],
 ];
 
@@ -74,9 +79,6 @@ const useElementStyles = createUseStyles({
 		marginBottom: '-18px',
 		marginTop: '3px',
 	},
-	checkbox: {
-		marginTop: '-10px',
-	},
 	content: {
 		width: '100ch',
 	},
@@ -113,19 +115,6 @@ function BasicTable({ fields }: BasicTableProps): JSX.Element {
 				</tr>
 			))}</tbody>
 		</table>
-	);
-}
-
-function EmailCheck(): JSX.Element {
-	const EMAIL = 'email';
-	const styles = useElementStyles();
-	return (
-		<div className={styles.checkbox}>
-			<input id={EMAIL} type='checkbox' defaultChecked />
-			<label htmlFor={EMAIL}>
-				Show my email in public profile?
-			</label>
-		</div>
 	);
 }
 
