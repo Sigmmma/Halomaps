@@ -119,6 +119,7 @@ const useAboutStyles = createUseStyles({
 	label: {
 		fontWeight: 'bold',
 		textAlign: 'right',
+		verticalAlign: 'top',
 	},
 	link: {
 		display: 'block',
