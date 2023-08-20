@@ -6,6 +6,7 @@ import Checkbox from '../components/Checkbox';
 import FieldTable, { FieldTableClasses, TableRow } from '../components/FieldTable';
 import Input from '../components/Input';
 import { HeaderBar, Separator } from '../components/Table';
+import Warning from '../components/Warning';
 import { Captcha } from '../images';
 
 const useStyles = createUseStyles({
@@ -86,7 +87,6 @@ export default function Register(): JSX.Element {
 
 const useVerifyStyles = createUseStyles({
 	alert: {
-		color: 'red',
 		marginBottom: '-18px',
 		marginTop: '3px',
 	},
@@ -120,9 +120,11 @@ function Verify(): JSX.Element {
 				<Button text='Reset' type='reset' />
 			</div>
 
-			<div className={styles.alert} hidden={!showWarning}>
-				Registration is disabled on this archive!
-			</div>
+			<Warning
+				className={styles.alert}
+				display={showWarning}
+				label='Registration'
+			/>
 		</div>
 	);
 }
