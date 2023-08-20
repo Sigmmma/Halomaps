@@ -3,11 +3,10 @@ import { createUseStyles } from 'react-jss';
 
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
+import FieldTable, { FieldTableClasses, TableRow } from '../components/FieldTable';
 import Input from '../components/Input';
 import { HeaderBar, Separator } from '../components/Table';
 import { Captcha } from '../images';
-
-type TableRow = [string, ReactNode];
 
 const useStyles = createUseStyles({
 	container: {
@@ -18,9 +17,19 @@ const useStyles = createUseStyles({
 		marginTop: '3px',
 		width: '95%',
 	},
+	content: {
+		width: '100ch',
+	},
 	header: {
 		height: '18px',
 		paddingTop: '3px',
+	},
+	label: {
+		fontWeight: 'bold',
+		width: '20%',
+	},
+	row: {
+		height: '25px',
 	},
 	separator: {
 		height: '17px',
@@ -51,13 +60,19 @@ const OPTIONAL_FIELDS: TableRow[] = [
 
 export default function Register(): JSX.Element {
 	const styles = useStyles();
+	const tableClasses: FieldTableClasses = {
+		content: styles.content,
+		label: styles.label,
+		row: styles.row,
+	};
+
 	return (
 		<form className={styles.container}>
 			<HeaderBar className={styles.header} content='Registration Information' />
 			<Separator className={styles.separator} content='Required Information' />
-			<BasicTable fields={REQUIRED_FIELDS} />
+			<FieldTable tableClasses={tableClasses} fields={REQUIRED_FIELDS} />
 			<Separator className={styles.separator} content='About you (Optional)' />
-			<BasicTable fields={OPTIONAL_FIELDS} />
+			<FieldTable tableClasses={tableClasses} fields={OPTIONAL_FIELDS} />
 			<Separator className={styles.separator} />
 			<Verify />
 			<HeaderBar />
@@ -66,36 +81,17 @@ export default function Register(): JSX.Element {
 }
 
 //******************************************************************************
-// Table for aligning user info entry fields
+// Verify element with captcha and form buttons
 //******************************************************************************
 
-interface BasicTableProps {
-	fields: TableRow[];
-}
-
-const useElementStyles = createUseStyles({
+const useVerifyStyles = createUseStyles({
 	alert: {
 		color: 'red',
 		marginBottom: '-18px',
 		marginTop: '3px',
 	},
-	content: {
-		width: '100ch',
-	},
-	label: {
-		fontWeight: 'bold',
-		textAlign: 'right',
-		width: '20%',
-	},
 	padding: {
 		paddingTop: '6px',
-	},
-	row: {
-		height: '25px',
-	},
-	table: {
-		marginLeft: 'auto',
-		marginRight: 'auto',
 	},
 	verify: {
 		marginBottom: '20px',
@@ -104,22 +100,8 @@ const useElementStyles = createUseStyles({
 	},
 });
 
-function BasicTable({ fields }: BasicTableProps): JSX.Element {
-	const styles = useElementStyles();
-	return (
-		<table className={styles.table}>
-			<tbody>{fields.map(([label, content], idx) => (
-				<tr className={styles.row} key={idx}>
-					<td className={styles.label}>{label ? `${label}:` : ''}</td>
-					<td className={styles.content}>{content}</td>
-				</tr>
-			))}</tbody>
-		</table>
-	);
-}
-
 function Verify(): JSX.Element {
-	const styles = useElementStyles();
+	const styles = useVerifyStyles();
 	const [showWarning, setShowWarning] = useState(false);
 
 	return (
