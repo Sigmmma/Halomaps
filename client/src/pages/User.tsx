@@ -167,14 +167,14 @@ function UserAbout({
 	}, [user, lastPostAt]);
 
 	return (
-		<table className={styles.table}>{
-			rows.map(([label, node]) => (
-				<tr className={styles.row}>
+		<table className={styles.table}><tbody>{
+			rows.map(([label, node], idx) => (
+				<tr className={styles.row} key={idx}>
 					<td className={styles.label}>{label}:</td>
 					<td className={styles.value}>{node}</td>
 				</tr>
 			))
-		}</table>
+		}</tbody></table>
 	);
 }
 

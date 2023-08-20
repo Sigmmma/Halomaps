@@ -109,7 +109,7 @@ function TableBody<T>({
 		<tbody>
 			{rows.map((row, idx) => (
 				row instanceof InlineElement
-					? <tr><td colSpan={columns.length}>
+					? <tr key={idx}><td colSpan={columns.length}>
 						{row.content}
 					</td></tr>
 					: <TableRow
