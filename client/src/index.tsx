@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import { Pane, PaneType } from './components/Pane';
 import useCaselessSearchParams from './hooks/useSearchParamsCaseInsensitive';
 import NotFound from './pages/404';
+import Approval from './pages/Approval';
 import Forum from './pages/Forum';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -57,6 +58,10 @@ const ROUTER = createBrowserRouter([
 
 const QUERY_ELEMS: Record<string, JSX.Element> = {
 	archiveinfo:       <Todo />,
+	// TODO we don't know what this page name was
+	// and there's no natural way to get here.
+	// We might consider making this its own page so we can change the header
+	approval:          <Approval />,
 	forgotpassword:    <Password />,
 	forum:             <Forum />,
 	home:              <Home />,
