@@ -39,6 +39,7 @@ export const Icons = {
 	TOPIC:         image('icons/topic_red.gif'),
 	TOPIC_JUMP:    image('icons/icon_mini_topic.gif'),
 	TOPIC_POPULAR: image('icons/topic_popular_red.gif'),
+	TOPIC_READ:    image('icons/topic.gif'),
 	TOPIC_LOCKED:  image('icons/topic_locked.gif'),
 };
 

@@ -13,6 +13,7 @@ import Forum from './pages/Forum';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Password from './pages/Password';
+import PrivateMessageBox from './pages/PrivateMessageBox';
 import Register from './pages/Register';
 import Topic from './pages/Topic';
 import User from './pages/User';
@@ -69,6 +70,8 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 	members:           <Todo />,
 	newreply:          <Todo />,
 	privatemessagenew: <Todo />,
+	private_messages:  <PrivateMessageBox />,
+	private_msg_view:  <Todo />,
 	recent:            <Todo />,
 	register:          <Register />,
 	search:            <Todo />,

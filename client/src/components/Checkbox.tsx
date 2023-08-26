@@ -1,20 +1,34 @@
-import React, { JSX, useId } from 'react';
+import React, { JSX, useId, useState } from 'react';
 
 interface CheckboxProps {
+	checked?: boolean;
 	defaultChecked?: boolean;
-	label: string;
+	label?: string;
+	setChecked?: (checked: boolean) => void;
 }
 
 export default function Checkbox({
+	checked,
 	defaultChecked,
 	label,
+	setChecked,
 }: CheckboxProps): JSX.Element {
-	const [id] = useId();
+	const [checkedInternal, setCheckedInternal] = useState(!!defaultChecked);
+	const id = useId();
 
 	return (
 		<div>
-			<input id={id} type='checkbox' defaultChecked={defaultChecked} />
-			<label htmlFor={id}>{label}</label>
+			<input
+				checked={checked ?? checkedInternal}
+				defaultChecked={defaultChecked}
+				id={id}
+				type='checkbox'
+				onChange={(event) => {
+					setCheckedInternal(event.target.checked);
+					setChecked?.(event.target.checked);
+				}}
+			/>
+			{label && <label htmlFor={id}>{label}</label>}
 		</div>
 	);
 }
