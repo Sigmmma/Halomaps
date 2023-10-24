@@ -130,14 +130,24 @@ function NavBar(): JSX.Element {
 // Controls
 //******************************************************************************
 
+enum Show {
+	ALWAYS, LOGGED_IN, LOGGED_OUT
+}
+
 const CONTROL_ITEMS = [
-	{ label: 'Home',         icon: Icons.HOME,     url: 'index.cfm?page=home'     },
-	{ label: 'Search',       icon: Icons.SEARCH,   url: 'index.cfm?page=search'   },
-	{ label: 'Register',     icon: Icons.REGISTER, url: 'index.cfm?page=register' },
-	{ label: 'Login',        icon: Icons.LOGIN,    url: 'index.cfm?page=login'    },
-	{ label: 'Member List',  icon: Icons.MEMBERS,  url: 'index.cfm?page=members'  },
-	{ label: 'Recent Posts', icon: Icons.RECENT,   url: 'index.cfm?page=recent'   },
+	{ label: 'Home',         icon: Icons.HOME,     url: 'index.cfm?page=home',     show: Show.ALWAYS     },
+	{ label: 'Search',       icon: Icons.SEARCH,   url: 'index.cfm?page=search',   show: Show.ALWAYS     },
+	{ label: 'Register',     icon: Icons.REGISTER, url: 'index.cfm?page=register', show: Show.LOGGED_OUT },
+	{ label: 'Login',        icon: Icons.LOGIN,    url: 'index.cfm?page=login',    show: Show.LOGGED_OUT },
+	{ label: 'Profile',      icon: Icons.PROFILE,  url: 'index.cfm?page=profile',  show: Show.LOGGED_IN  },
+	{ label: 'Member List',  icon: Icons.MEMBERS,  url: 'index.cfm?page=members',  show: Show.ALWAYS     },
+	{ label: 'Recent Posts', icon: Icons.RECENT,   url: 'index.cfm?page=recent',   show: Show.ALWAYS     },
 ];
+
+interface ControlsProps {
+	loginName?: string;
+	messages?: number;
+}
 
 const useControlStyles = createUseStyles({
 	container: {
@@ -148,6 +158,7 @@ const useControlStyles = createUseStyles({
 		verticalAlign: 'middle',
 	},
 	item: {
+		display: 'inline-block',
 		marginRight: '10px',
 	},
 	// This reproduces HaloMaps' behavior at max width, but not at min width.
@@ -162,22 +173,77 @@ const useControlStyles = createUseStyles({
 	leftSpacing: {
 		display: 'inline-block',
 		maxWidth: '190px',
-		minWidth: '50px', // We never actually reach this because 600px * 15% = 96px
+		minWidth: '50px', // We never actually reach this because 600px * 16% = 96px
 		width: '16%',
+	},
+	rows: {
+		display: 'inline-block',
+		textAlign: 'center',
+	},
+	vertSeparator: {
+		height: '10px',
 	},
 });
 
-function Controls(): JSX.Element {
+function Controls({
+	loginName,
+	messages,
+}: ControlsProps): JSX.Element {
 	const styles = useControlStyles();
+
+	const loggedInItems = [
+		{
+			label: 'My Forums',
+			icon: Icons.MY_FORUMS,
+			url: 'index.cfm?page=myforum',
+		},
+		{
+			label: 'Private Messages',
+			icon: Icons.MESSAGES,
+			url: 'index.cfm?page=private_messages',
+			after: messages ? ` (${messages})` : '',
+		},
+		{
+			label: `Logout [${loginName}]`,
+			icon: Icons.LOGOUT,
+			url: 'index.cfm?page=logout&eflag=logout',
+		},
+	];
+
 	return (
 		<div className={styles.container}>
 			<div className={styles.leftSpacing}></div>
-			{CONTROL_ITEMS.map((item, idx) => (
-				<a className={styles.item} href={item.url} key={idx}>
-					<img className={styles.icon} src={item.icon} />
-					{item.label}
-				</a>
-			))}
+			<div className={styles.rows}>
+				{CONTROL_ITEMS
+					.filter(item => (
+						item.show === Show.ALWAYS ||
+						( loginName && item.show === Show.LOGGED_IN) ||
+						(!loginName && item.show === Show.LOGGED_OUT)
+					))
+					.map((item, idx) => (
+						<div className={styles.item} key={idx}>
+							<a href={item.url}>
+								<img className={styles.icon} src={item.icon} />
+								{item.label}
+							</a>
+						</div>
+					))
+				}
+				{ loginName && <>
+					<br/>
+					<div className={styles.vertSeparator} />
+
+					{ loggedInItems.map((item, index) => (
+						<div className={styles.item} key={index}>
+							<a href={item.url}>
+								<img className={styles.icon} src={item.icon} />
+								{item.label}
+							</a>
+							{item.after}
+						</div>
+					))}
+				</>}
+			</div>
 		</div>
 	);
 }
