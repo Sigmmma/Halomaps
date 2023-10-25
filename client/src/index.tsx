@@ -1,4 +1,4 @@
-import React, { JSX } from 'react';
+import React, { JSX, Profiler, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createUseStyles } from 'react-jss';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
@@ -80,12 +80,24 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 };
 
 function App(): JSX.Element {
+	// Abuse the built-in profiler to display render time on the page.
+	const PERF_NAME = 'page_render';
+	performance.clearMarks(PERF_NAME);
+	performance.mark(PERF_NAME);
+
 	useGlobalStyles();
+	const [renderDuration, setRenderDuration] = useState<number>();
+
 	return <>
-		<FullHeader />
-		<RouterProvider router={ROUTER} />
-		{/* TODO actually calculate duration */}
-		<Footer date={new Date()} duration={12345} />
+		<Profiler id={PERF_NAME} onRender={() => {
+			const duration = performance.measure(PERF_NAME).duration;
+			setRenderDuration(Math.round(duration));
+			console.log(duration);
+		}}>
+			<FullHeader />
+			<RouterProvider router={ROUTER} />
+		</Profiler>
+		{renderDuration && <Footer date={new Date()} duration={renderDuration} /> }
 	</>;
 }
 
