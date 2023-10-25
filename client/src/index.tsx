@@ -68,10 +68,11 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 	home:              <Home />,
 	login:             <Login />,
 	members:           <Todo />,
-	newreply:          <Todo />,
-	privatemessagenew: <Todo />,
+	newreply:          <Bounty desc='This is the page for writing a new reply to a post.' />,
+	privatemessagenew: <Bounty desc='This is the page for writing a new private message.' />,
 	private_messages:  <PrivateMessageBox />,
-	private_msg_view:  <Todo />,
+	private_msg_view:  <Bounty desc='This is the page for viewing a private message.' />,
+	profile:           <Bounty desc='This is the page linked in the header under "Profile".' />,
 	recent:            <Todo />,
 	register:          <Register />,
 	search:            <Todo />,
@@ -117,5 +118,32 @@ function Todo(): JSX.Element {
 			type={PaneType.WARNING}
 			width='300px'
 		/>
+	);
+}
+
+interface BountyProps {
+	desc: string;
+}
+
+function Bounty({ desc }: BountyProps): JSX.Element {
+	return (
+		<Pane
+			title='Page Reference Needed'
+			type={PaneType.WARNING}
+			width='300px'
+		>
+		<div style={{ padding: '5px' }}>
+			{desc}<br/>
+			<br/>
+			Our archive does not contain an example of this page.
+			This was likely a page that required a user to be logged in, or was
+			removed before the site went offline.<br/>
+			<br/>
+			If you have an example of this page (either saved HTML or a
+			screenshot), please submit it in a&nbsp;
+			<a href='https://github.com/Sigmmma/Halomaps/issues'>GitHub issue</a>,
+			and we will do our best to faithfully reproduce it.
+		</div>
+		</Pane>
 	);
 }
