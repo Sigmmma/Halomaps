@@ -1,9 +1,9 @@
 import React, { JSX, useState } from 'react';
 import { createUseStyles } from 'react-jss';
 
-import FieldTable, { TableRow } from '../components/FieldTable';
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
+import { FieldTable, TableRow } from '../components/Form';
 import Input from '../components/Input';
 import { Pane } from '../components/Pane';
 import Warning from '../components/Warning';

@@ -3,8 +3,7 @@ import { createUseStyles } from 'react-jss';
 
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
-import FieldTable, { FieldTableClasses, TableRow } from '../components/FieldTable';
-import { Form } from '../components/Form';
+import { FieldTable, FieldTableClasses, Form, TableRow } from '../components/Form';
 import Input from '../components/Input';
 import { HeaderBar, Separator } from '../components/Table';
 import Warning from '../components/Warning';
