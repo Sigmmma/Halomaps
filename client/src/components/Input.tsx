@@ -17,6 +17,7 @@ const useStyles = createUseStyles({
 		borderColor: 'black',
 		borderStyle: 'solid',
 		borderWidth: '1px',
+		fontFamily: 'verdana',
 		fontSize: '14px',
 	},
 });
