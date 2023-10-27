@@ -4,26 +4,15 @@ import { createUseStyles } from 'react-jss';
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
 import FieldTable, { FieldTableClasses, TableRow } from '../components/FieldTable';
+import { Form } from '../components/Form';
 import Input from '../components/Input';
 import { HeaderBar, Separator } from '../components/Table';
 import Warning from '../components/Warning';
 import { Captcha } from '../images';
 
 const useStyles = createUseStyles({
-	container: {
-		backgroundColor: '#F2F2F2',
-		borderColor: 'black',
-		borderStyle: 'solid',
-		borderWidth: '1px',
-		marginTop: '3px',
-		width: '95%',
-	},
 	content: {
 		width: '100ch',
-	},
-	header: {
-		height: '18px',
-		paddingTop: '3px',
 	},
 	label: {
 		fontWeight: 'bold',
@@ -68,8 +57,7 @@ export default function Register(): JSX.Element {
 	};
 
 	return (
-		<form className={styles.container}>
-			<HeaderBar className={styles.header} content='Registration Information' />
+		<Form title='Registration Information'>
 			<Separator className={styles.separator} content='Required Information' />
 			<FieldTable tableClasses={tableClasses} fields={REQUIRED_FIELDS} />
 			<Separator className={styles.separator} content='About you (Optional)' />
@@ -77,7 +65,7 @@ export default function Register(): JSX.Element {
 			<Separator className={styles.separator} />
 			<Verify />
 			<HeaderBar />
-		</form>
+		</Form>
 	);
 }
 
