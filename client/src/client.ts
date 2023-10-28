@@ -1,3 +1,4 @@
+import { Forum } from '../../server/database/types';
 import {
 	ForumInfo,
 	HomeData,
@@ -46,6 +47,10 @@ export default class Client {
 
 	static async getForum(forumId: number): Promise<ForumInfo> {
 		return await Client.request(`/forum/${forumId}`);
+	}
+
+	static async getForums(): Promise<Forum[]> {
+		return await Client.request('/forums');
 	}
 
 	static async getLatestTopic(forumId: number): Promise<TopicInfo> {

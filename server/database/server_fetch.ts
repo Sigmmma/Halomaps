@@ -54,6 +54,13 @@ export async function getCategories(categoryId?: number): Promise<Category[]> {
 	return (await query).map(row => parseDates(row, ['mirrored_at'])!);
 }
 
+/** Gets all Forums. */
+export async function getForums(): Promise<Forum[]> {
+	const forums = await knex<Forum>(Table.FORUMS)
+		.select();
+	return forums.map(forum => parseDates(forum, ['mirrored_at']));
+}
+
 /** Gets a Forum by ID. Returns `undefined` if `forumId` matches no Forums. */
 export async function getForum(forumId: number): Promise<Forum | undefined> {
 	const forums = await getForumsById([forumId]);

@@ -4,7 +4,7 @@ import { ServerResponse } from 'http';
 import polka from 'polka';
 
 import * as database from '../database/server_fetch';
-import { TopicWithCount } from '../database/types';
+import { Forum, TopicWithCount } from '../database/types';
 import {
 	CategoryWithForum,
 	ForumInfo,
@@ -39,6 +39,7 @@ const FORUM_ID = 'forumId';
 const TOPIC_ID = 'topicId';
 const USER_ID = 'userId';
 
+server.get('/forums', wrapHandler(getForumList));
 server.get(`/forum/:${FORUM_ID}`, wrapHandler(getForum));
 server.get(`/forum/:${FORUM_ID}/topics`, wrapHandler(getForumTopics));
 server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
@@ -143,6 +144,13 @@ async function getMembers(request: Request) {
  */
 async function getRecent(request: Request) {
 	return 'TODO';
+}
+
+/**
+ * Fetches the list of all Forums.
+ */
+async function getForumList(_request: Request): Promise<Forum[]> {
+	return await database.getForums();
 }
 
 /**
