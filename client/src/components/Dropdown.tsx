@@ -11,27 +11,29 @@ const useStyles = createUseStyles({
 	},
 });
 
-export interface DropdownOption {
-	key: string;
+export interface DropdownOption<T extends string = string> {
+	key: T;
 	text: string;
 }
 
-interface DropdownProps {
+interface DropdownProps<T extends string = string> {
 	className?: string;
-	options: DropdownOption[];
+	options: DropdownOption<T>[];
+	selected?: T;
+	setSelected?: (selected: T) => void;
 }
 
-export default function Dropdown({
+export default function Dropdown<T extends string = string>({
 	className,
 	options,
-}: DropdownProps): JSX.Element {
-	const [selected, setSelected] = useState<string>(options[0].key);
+	selected,
+	setSelected,
+}: DropdownProps<T>): JSX.Element {
 	const styles = useStyles();
-
 	return (
 		<select
 			className={classNames(styles.input, className)}
-			onChange={(e) => setSelected(e.target.value)}
+			onChange={(e) => setSelected?.(e.target.value as T)}
 			value={selected}
 		>
 			{options.map(option => (
