@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import Password from './pages/Password';
 import PrivateMessageBox from './pages/PrivateMessageBox';
 import Register from './pages/Register';
+import Search from './pages/Search';
 import Topic from './pages/Topic';
 import User from './pages/User';
 
@@ -75,7 +76,7 @@ const QUERY_ELEMS: Record<string, JSX.Element> = {
 	profile:           <Bounty desc='This is the page linked in the header under "Profile".' />,
 	recent:            <Todo />,
 	register:          <Register />,
-	search:            <Todo />,
+	search:            <Search />,
 	topic:             <Topic />,
 	userinfo:          <User />,
 };
