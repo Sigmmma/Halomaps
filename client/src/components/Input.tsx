@@ -28,7 +28,7 @@ export default function Input({
 	maxLength,
 	size,
 	type = 'text',
-	value,
+	value = '', // Avoid uncontrolled -> controlled React warning
 	setValue,
 }: InputProps): JSX.Element {
 	const styles = useStyles();

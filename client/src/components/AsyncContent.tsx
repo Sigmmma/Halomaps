@@ -7,7 +7,7 @@ import { PaneType, TextPane } from './Pane';
 
 type AsyncContentProps<T> = {
 	state: AsyncState<T>;
-	render: (data: T) => JSX.Element,
+	render: (data: T) => JSX.Element;
 }
 
 const useStyles = createUseStyles(() => ({

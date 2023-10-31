@@ -10,3 +10,13 @@ export function mapById<T extends HasID>(items: T[]): Map<number, T> {
 		new Map<number, T>(),
 	);
 }
+
+/**
+ * Returns a copy of {@link items} with the element at {@link index} removed.
+ */
+export function copyRemoveAt<T>(items: T[], index: number): T[] {
+	return [
+		...items.slice(0, index) ?? [],
+		...items.slice(index + 1) ?? [],
+	];
+}
