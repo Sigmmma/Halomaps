@@ -1,17 +1,11 @@
 import React, { DetailedHTMLProps, InputHTMLAttributes, JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
-type InputProps = Pick<
-	DetailedHTMLProps<
-		InputHTMLAttributes<HTMLInputElement>,
-		HTMLInputElement
-	>,
-	'type'
+type InputProps = DetailedHTMLProps<
+	InputHTMLAttributes<HTMLInputElement>,
+	HTMLInputElement
 > & {
-	maxLength?: number;
-	size: number;
-	value?: string;
-	setValue?: (value: string) => void;
+	onChangeValue?: (value: string) => void;
 }
 
 const useStyles = createUseStyles({
@@ -25,20 +19,22 @@ const useStyles = createUseStyles({
 });
 
 export default function Input({
-	maxLength,
-	size,
 	type = 'text',
 	value = '', // Avoid uncontrolled -> controlled React warning
-	setValue,
+	onChange,
+	onChangeValue,
+	...rest
 }: InputProps): JSX.Element {
 	const styles = useStyles();
 	return (
 		<input
+			{...rest}
 			className={styles.input}
 			type={type}
-			maxLength={maxLength}
-			onChange={(e) => setValue?.(e.target.value)}
-			size={size}
+			onChange={(e) => {
+				onChange?.(e);
+				onChangeValue?.(e.target.value);
+			}}
 			value={value}
 		/>
 	);

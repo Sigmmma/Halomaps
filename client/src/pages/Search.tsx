@@ -10,8 +10,9 @@ import Client from '../client';
 import AsyncContent from '../components/AsyncContent';
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
+import DatePicker from '../components/DatePicker';
 import Dropdown, { DropdownOption } from '../components/Dropdown';
-import { FieldTable, Fieldset, TableRow } from '../components/Form';
+import { FieldTable, Fieldset } from '../components/Form';
 import Input from '../components/Input';
 import { Pane } from '../components/Pane';
 
@@ -107,7 +108,7 @@ function SearchCriteria({ params, updateParams }: SearchProps): JSX.Element {
 				}}
 				fields={[
 					['Search', <Input
-						setValue={(search) => updateParams({ search })}
+						onChangeValue={(search) => updateParams({ search })}
 						size={30}
 						value={params.search}
 					/>],
@@ -118,7 +119,7 @@ function SearchCriteria({ params, updateParams }: SearchProps): JSX.Element {
 					/>],
 					['Posted By', <>
 						<Input
-							setValue={(author) => updateParams({ author })}
+							onChangeValue={(author) => updateParams({ author })}
 							size={30}
 							value={params.author}
 						/>
@@ -162,12 +163,21 @@ function DateCriteria({ params, updateParams }: SearchProps): JSX.Element {
 
 				<span style={{ color: 'navy' }}>OR...</span>&nbsp;
 				Posted between&nbsp;
-				{/* TODO need a date picker here */}
-				<Input size={10} />
+
+				{/* FIXME Popup calendar messes up page formatting */}
+				<DatePicker
+					selected={params.from}
+					maxDate={params.to}
+					onChange={(date) => updateParams({ from: date ?? undefined })}
+				/>
 
 				&nbsp;and&nbsp;
 
-				<Input size={10} />
+				<DatePicker
+					selected={params.to}
+					minDate={params.from}
+					onChange={(date) => updateParams({ to: date ?? undefined })}
+				/>
 			</div>
 		</Fieldset>
 	);
