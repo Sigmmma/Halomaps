@@ -11,6 +11,20 @@ import {
 // TODO need to configure this somewhere
 const BASE_URL = 'http://localhost:9123';
 
+function handlePossibleRequestError(response: Response) {
+	if (response.status >= 400) {
+		throw new Error(`${response.status} ${response.statusText}`);
+	}
+}
+
+async function toData<T = unknown>(response: Response): Promise<T> {
+	const parser = ({
+		'text/plain':       () => response.text(),
+		'application/json': () => response.json(),
+	}[response.headers.get('Content-type') ?? '']);
+	return await parser?.();
+}
+
 export default class Client {
 
 	private static async request<T = unknown>(
@@ -25,16 +39,29 @@ export default class Client {
 
 		const response = await fetch(url);
 
-		if (response.status >= 400) {
-			throw new Error(`${response.status} ${response.statusText}`);
-		}
+		handlePossibleRequestError(response);
 
-		const parser = ({
-			'text/plain':       () => response.text(),
-			'application/json': () => response.json(),
-		}[response.headers.get('Content-type') ?? '']);
+		return await toData(response);
+	}
 
-		return await parser?.();
+	private static async post<T = unknown>(
+		path: string,
+		data?: unknown,
+	): Promise<T> {
+		const url = new URL(path, BASE_URL);
+
+		const response = await fetch(url, {
+			method: 'post',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(data),
+		});
+
+		handlePossibleRequestError(response);
+
+		return await toData(response);
 	}
 
 	static async getInfo(): Promise<string> {
