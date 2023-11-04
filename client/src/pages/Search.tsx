@@ -164,7 +164,6 @@ function DateCriteria({ params, updateParams }: SearchProps): JSX.Element {
 				<span style={{ color: 'navy' }}>OR...</span>&nbsp;
 				Posted between&nbsp;
 
-				{/* FIXME Popup calendar messes up page formatting */}
 				<DatePicker
 					selected={params.from}
 					maxDate={params.to}
