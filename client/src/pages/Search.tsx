@@ -1,9 +1,10 @@
 import classNames from 'classnames';
 import React, { JSX, useEffect } from 'react';
 import { createUseStyles } from 'react-jss';
-import { useAsync, useSetState } from 'react-use';
+import { useAsync, useAsyncFn, useSetState } from 'react-use';
 
 import { Forum } from '../../../server/database/types';
+import { MatchOption, SearchParams } from '../../../server/http/types';
 import { copyRemoveAt } from '../../../server/util';
 
 import Client from '../client';
@@ -35,22 +36,6 @@ const useSharedStyles = createUseStyles({
 	},
 });
 
-enum MatchOption {
-	All = 'All',
-	Any = 'Any',
-	Exact = 'Exact',
-}
-
-interface SearchParams {
-	search?: string;
-	match?: MatchOption;
-	author?: string;
-	days?: string;
-	from?: Date;
-	to?: Date;
-	forums?: number[];
-}
-
 interface SearchProps {
 	params: SearchParams;
 	updateParams: (params: Partial<SearchParams>) => void;
@@ -60,14 +45,19 @@ export default function Search(): JSX.Element {
 	const styles = useSharedStyles();
 	const [params, updateParams] = useSetState<SearchParams>();
 
-	console.log(params);
+	// TODO search params should be in URL so people can copy/paste them
+	const [searchState, doSearch] = useAsyncFn(async () => (
+		Client.postSearch(params)
+	), [params]);
+
+	console.log(searchState);
 
 	return (
 		// TODO top bar needs to be a little taller.
 		// TODO need a small margin below the top bar.
 		<Pane title='Search' className={styles.pane}>
 			<div className={styles.centered}>
-				<SearchCriteria params={params} updateParams={updateParams} />
+				<SearchCriteria params={params} updateParams={updateParams} doSearch={doSearch} />
 				<br/>
 				<DateCriteria params={params} updateParams={updateParams} />
 				<br/>
@@ -95,7 +85,15 @@ const PHRASE_OPTIONS: DropdownOption<MatchOption>[] = [
 	{ key: MatchOption.Exact, text: 'Match Exact Phrase' },
 ];
 
-function SearchCriteria({ params, updateParams }: SearchProps): JSX.Element {
+interface CriteriaProps {
+	doSearch: () => void;
+}
+
+function SearchCriteria({
+	params,
+	doSearch,
+	updateParams,
+}: SearchProps & CriteriaProps): JSX.Element {
 	const styles = useSharedStyles();
 	const searchStyles = useSearchStyles();
 
@@ -123,7 +121,12 @@ function SearchCriteria({ params, updateParams }: SearchProps): JSX.Element {
 							size={30}
 							value={params.author}
 						/>
-						<Button text='Search' className={searchStyles.button} />
+
+						<Button
+							className={searchStyles.button}
+							onClick={doSearch}
+							text='Search'
+						/>
 					</>],
 				]}
 			/>

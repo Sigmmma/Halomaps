@@ -61,3 +61,19 @@ export interface UserInfo {
 	topics: TopicWithCount[];
 	user: UserWithPostCount;
 }
+
+export enum MatchOption {
+	All = 'All',
+	Any = 'Any',
+	Exact = 'Exact',
+}
+
+export interface SearchParams {
+	search?: string;
+	match?: MatchOption;
+	author?: string;
+	days?: string;
+	from?: Date;
+	to?: Date;
+	forums?: number[];
+}

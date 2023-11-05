@@ -4,6 +4,7 @@ import setupKnex from 'knex';
 import knexfile from './knexfile';
 const knex = setupKnex(knexfile);
 import Table from './tables';
+import { SearchParams } from '../http/types';
 import {
 	AdjacentTopic,
 	Category,
@@ -447,6 +448,50 @@ export async function getUserWithPostCount(
 		...user,
 		total_posts,
 	};
+}
+
+/**
+ * Returns a list of Posts matching the given search parameters.
+ */
+export async function queryPosts(
+	params: SearchParams,
+	limit: number,
+	start: number,
+): Promise<Post[]> {
+	let authorId: number;
+	if (params.author) {
+		const author = await knex<User>(Table.USERS)
+			.first('id')
+			.where('name', '=', params.author);
+
+		// If we can't find the author, then there couldn't possibly be any
+		// posts from that user. We can short-circuit early.
+		if (!author) {
+			return [];
+		}
+
+		authorId = author.id;
+	}
+
+	const query = knex<Post>(Table.POSTS)
+		.select()
+		.limit(limit)
+		.offset(start);
+
+	if (params.author) {
+		query.where('author_id', '=', authorId);
+	}
+
+	if (params.from) {
+		query.where('created_at', '>=', params.from);
+	}
+
+	if (params.to) {
+		query.where('created_at', '<=', params.to);
+	}
+
+	const posts = await query;
+	return posts.map(post => parseDates(post, ['created_at', 'mirrored_at']));
 }
 
 /** Constrains a value between the min and max. */

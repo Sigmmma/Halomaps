@@ -6,6 +6,7 @@ import {
 	TopicInfo,
 	TopicPostPage,
 	UserInfo,
+	SearchParams,
 } from '../../server/http/types';
 
 // TODO need to configure this somewhere
@@ -88,6 +89,10 @@ export default class Client {
 		return await Client.request(`/topic/${topicId}/posts`, {
 			start: start ? `${start}` : '',
 		});
+	}
+
+	static async postSearch(searchParams: SearchParams): Promise<void> {
+		return await Client.post('/search', searchParams);
 	}
 
 	static async getTopic(topicId: number): Promise<TopicInfo> {

@@ -4,7 +4,7 @@ import { ServerResponse } from 'http';
 import polka from 'polka';
 
 import * as database from '../database/server_fetch';
-import { Forum, TopicWithCount } from '../database/types';
+import { Forum, Post, TopicWithCount } from '../database/types';
 import {
 	CategoryWithForum,
 	ForumInfo,
@@ -14,6 +14,8 @@ import {
 	TopicInfo,
 	TopicPostPage,
 	UserInfo,
+	SearchParams,
+	MatchOption,
 } from './types';
 import { mapById } from '../util';
 const info = require('../package.json');
@@ -44,6 +46,7 @@ server.get(`/forum/:${FORUM_ID}`, wrapHandler(getForum));
 server.get(`/forum/:${FORUM_ID}/topics`, wrapHandler(getForumTopics));
 server.get(`/home/:${CATEGORY_ID}?`, wrapHandler(getHome));
 server.get('/info', wrapHandler(getInfo));
+server.post('/search', wrapHandler(postSearch));
 server.get(`/topic/:${TOPIC_ID}`, wrapHandler(getTopic));
 server.get(`/topic/:${TOPIC_ID}/posts`, wrapHandler(getTopicPosts));
 server.get(`/topic/latest/:${FORUM_ID}`, wrapHandler(getLatestTopic));
@@ -126,10 +129,26 @@ async function getHome(request: Request): Promise<HomeData> {
 }
 
 /**
- *
+ * Fetches posts matching the given search query.
  */
-async function getSearch(request: Request) {
-	return 'TODO';
+async function postSearch(request: Request): Promise<Post[]> {
+	// I'm not installing body-parser with its 32 dependencies for this.
+	const body = await new Promise<SearchParams>((resolve, reject) => {
+		const chunks: string[] = [];
+		request.on('data', (chunk) => chunks.push(chunk));
+		request.on('error', reject);
+		request.on('end', () => {
+			const data: SearchParams = JSON.parse(chunks.join(''));
+			if (data.from) data.from = new Date(data.from);
+			if (data.to)   data.to   = new Date(data.to);
+			resolve(data);
+		});
+	});
+	body.match ??= MatchOption.All;
+	// TODO Handle only one of from or to set.
+
+	const posts = await database.queryPosts(body, 20, 0);
+	return posts;
 }
 
 /**
