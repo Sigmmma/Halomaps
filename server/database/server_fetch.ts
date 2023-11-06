@@ -4,7 +4,7 @@ import setupKnex from 'knex';
 import knexfile from './knexfile';
 const knex = setupKnex(knexfile);
 import Table from './tables';
-import { SearchParams } from '../http/types';
+import { MatchOption, SearchParams } from '../http/types';
 import {
 	AdjacentTopic,
 	Category,
@@ -488,6 +488,30 @@ export async function queryPosts(
 
 	if (params.to) {
 		query.where('created_at', '<=', params.to);
+	}
+
+	// Escape SQL WHERE wildcards
+	if (params.search) {
+		params.search = params.search
+			.replace(/%/g, '\\%')
+			.replace(/_/g, '\\_');
+	}
+
+	// Knex doesn't have an "escape" builder, so we need to use raw WHERE
+	// queries to make SQLite use our escape character.
+	const like = `content LIKE ? ESCAPE '\\'`;
+	if (params.match === MatchOption.Exact) {
+		query.whereRaw(like, [`%${params.search}%`]);
+	} else {
+		const terms = params.search.split(/\s+/);
+
+		if (params.match === MatchOption.All) {
+			terms.forEach(term => query.andWhereRaw(like, [`%${term}%`]));
+		}
+
+		if (params.match === MatchOption.Any) {
+			terms.forEach(term => query.orWhereRaw(like, [`%${term}%`]));
+		}
 	}
 
 	const posts = await query;
