@@ -73,7 +73,7 @@ export enum MatchOption {
 
 export interface SearchParams {
 	author?: string;
-	days?: string;
+	days?: number;
 	from?: Date;
 	forums?: number[];
 	match?: MatchOption;

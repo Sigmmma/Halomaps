@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import React, { JSX, useState } from 'react';
+import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
 const useStyles = createUseStyles({
@@ -11,19 +11,19 @@ const useStyles = createUseStyles({
 	},
 });
 
-export interface DropdownOption<T extends string = string> {
+export interface DropdownOption<T extends string | number = string> {
 	key: T;
 	text: string;
 }
 
-interface DropdownProps<T extends string = string> {
+interface DropdownProps<T extends string | number = string> {
 	className?: string;
 	options: DropdownOption<T>[];
 	selected?: T;
 	setSelected?: (selected: T) => void;
 }
 
-export default function Dropdown<T extends string = string>({
+export default function Dropdown<T extends string | number = string>({
 	className,
 	options,
 	selected,
@@ -33,7 +33,7 @@ export default function Dropdown<T extends string = string>({
 	return (
 		<select
 			className={classNames(styles.input, className)}
-			onChange={(e) => setSelected?.(e.target.value as T)}
+			onChange={(e) => setSelected?.(options[e.target.options.selectedIndex].key)}
 			value={selected}
 		>
 			{options.map(option => (

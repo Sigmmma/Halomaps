@@ -138,11 +138,10 @@ function SearchCriteria({
 // Date Criteria section
 //******************************************************************************
 
-const DAYS_OPTIONS: DropdownOption[] = [
-	{ key: '', text: '-' },
+const DAYS_OPTIONS: DropdownOption<number>[] = [
+	{ key: 0, text: '-' },
 	...([1, 2, 3, 7, 10, 14, 21, 30, 60, 90]
-		.map(num => `${num}`)
-		.map<DropdownOption>(text => ({ key: text, text }))
+		.map<DropdownOption<number>>(key => ({ key, text: `${key}` }))
 	),
 ];
 
