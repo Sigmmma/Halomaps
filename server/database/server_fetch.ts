@@ -429,6 +429,15 @@ export async function getUser(userId: number): Promise<User | undefined> {
 	return parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at']);
 }
 
+/** Fetches a list of Users by IDs. */
+export async function getUsersById(userIds: number[]): Promise<User[]> {
+	const users = await knex<User>(Table.USERS)
+		.select()
+		.whereIn('id', userIds);
+
+	return users.map(user => parseDates(user, ['joined_at', 'last_visit_at', 'mirrored_at']));
+}
+
 /** Fetches a User and their total Post count by ID. */
 export async function getUserWithPostCount(
 	userId: number,
@@ -503,14 +512,14 @@ export async function queryPosts(
 	if (params.match === MatchOption.Exact) {
 		query.whereRaw(like, [`%${params.search}%`]);
 	} else {
-		const terms = params.search.split(/\s+/);
+		const terms = params.search?.split(/\s+/);
 
 		if (params.match === MatchOption.All) {
-			terms.forEach(term => query.andWhereRaw(like, [`%${term}%`]));
+			terms?.forEach(term => query.andWhereRaw(like, [`%${term}%`]));
 		}
 
 		if (params.match === MatchOption.Any) {
-			terms.forEach(term => query.orWhereRaw(like, [`%${term}%`]));
+			terms?.forEach(term => query.orWhereRaw(like, [`%${term}%`]));
 		}
 	}
 

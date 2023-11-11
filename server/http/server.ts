@@ -4,18 +4,19 @@ import { ServerResponse } from 'http';
 import polka from 'polka';
 
 import * as database from '../database/server_fetch';
-import { Forum, Post, TopicWithCount } from '../database/types';
+import { Forum, TopicWithCount } from '../database/types';
 import {
 	CategoryWithForum,
 	ForumInfo,
 	ForumWithPost,
 	HomeData,
+	MatchOption,
+	SearchParams,
+	SearchResults,
 	TopicList,
 	TopicInfo,
 	TopicPostPage,
 	UserInfo,
-	SearchParams,
-	MatchOption,
 } from './types';
 import { mapById } from '../util';
 const info = require('../package.json');
@@ -131,7 +132,7 @@ async function getHome(request: Request): Promise<HomeData> {
 /**
  * Fetches posts matching the given search query.
  */
-async function postSearch(request: Request): Promise<Post[]> {
+async function postSearch(request: Request): Promise<SearchResults> {
 	// I'm not installing body-parser with its 32 dependencies for this.
 	const body = await new Promise<SearchParams>((resolve, reject) => {
 		const chunks: string[] = [];
@@ -147,8 +148,21 @@ async function postSearch(request: Request): Promise<Post[]> {
 	body.match ??= MatchOption.All;
 	// TODO Handle only one of from or to set.
 
-	const posts = await database.queryPosts(body, 20, 0);
-	return posts;
+	const limit = 20;
+	const start = 0;
+
+	const posts = await database.queryPosts(body, start, limit);
+	const users = await database.getUsersById(posts.map(post => post.author_id));
+	const topics = await database.getTopicsById(posts.map(post => post.topic_id));
+	const forums = await database.getForumsById(topics.map(topic => topic.forum_id));
+	return {
+		forums,
+		posts,
+		size: limit,
+		start,
+		topics,
+		users,
+	};
 }
 
 /**

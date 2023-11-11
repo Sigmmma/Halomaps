@@ -5,6 +5,7 @@ import {
 	ForumStats,
 	Post,
 	PostAndUser,
+	Topic,
 	TopicPosts,
 	TopicWithCount,
 	TopicWithPostInfo,
@@ -49,10 +50,12 @@ export type TopicInfo = AdjacentTopic & {
 	topic: TopicWithCount;
 }
 
-export type TopicPostPage = TopicPosts & {
+interface Page {
 	size: number;
 	start: number;
 }
+
+export type TopicPostPage = TopicPosts & Page;
 
 export interface UserInfo {
 	board_post_count: number;
@@ -69,11 +72,18 @@ export enum MatchOption {
 }
 
 export interface SearchParams {
-	search?: string;
-	match?: MatchOption;
 	author?: string;
 	days?: string;
 	from?: Date;
-	to?: Date;
 	forums?: number[];
+	match?: MatchOption;
+	search?: string;
+	to?: Date;
+}
+
+export type SearchResults = Page & {
+	forums: Category[];
+	posts: Post[];
+	topics: Topic[];
+	users: User[];
 }

@@ -7,6 +7,7 @@ import {
 	TopicPostPage,
 	UserInfo,
 	SearchParams,
+	SearchResults,
 } from '../../server/http/types';
 
 // TODO need to configure this somewhere
@@ -91,7 +92,7 @@ export default class Client {
 		});
 	}
 
-	static async postSearch(searchParams: SearchParams): Promise<void> {
+	static async postSearch(searchParams: SearchParams): Promise<SearchResults> {
 		return await Client.post('/search', searchParams);
 	}
 
