@@ -139,14 +139,18 @@ function SearchCriteria({
 //******************************************************************************
 
 const DAYS_OPTIONS: DropdownOption<number>[] = [
-	{ key: 0, text: '-' },
+	// NaN is a gross way to get "defined-but-unset" that satisfies the number type.
+	{ key: NaN, text: '-' },
 	...([1, 2, 3, 7, 10, 14, 21, 30, 60, 90]
 		.map<DropdownOption<number>>(key => ({ key, text: `${key}` }))
 	),
 ];
+const DEFAULT_OPTION = DAYS_OPTIONS[8];
 
 function DateCriteria({ params, updateParams }: SearchProps): JSX.Element {
 	const styles = useSharedStyles();
+
+	useEffect(() => updateParams({ days: DEFAULT_OPTION.key }), []);
 
 	return (
 		<Fieldset label='Date Criteria:'>
@@ -155,8 +159,8 @@ function DateCriteria({ params, updateParams }: SearchProps): JSX.Element {
 
 				<Dropdown
 					options={DAYS_OPTIONS}
-					selected={params.days ?? DAYS_OPTIONS[8].key}
-					setSelected={(days) => updateParams({ days: days || undefined })}
+					selected={params.days ?? DEFAULT_OPTION.key}
+					setSelected={(days) => updateParams({ days: days ?? undefined })}
 				/>
 
 				&nbsp;day(s).

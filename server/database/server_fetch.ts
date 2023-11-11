@@ -1,5 +1,7 @@
 import { parseJSON as parseJsonDate } from 'date-fns';
 import setupKnex from 'knex';
+import { DateTime } from 'luxon';
+
 // @ts-ignore This has to be a JS file for knex
 import knexfile from './knexfile';
 const knex = setupKnex(knexfile);
@@ -463,7 +465,7 @@ export async function getUserWithPostCount(
  * Returns a list of Posts matching the given search parameters.
  */
 export async function queryPosts(
-	params: SearchParams,
+	params: Omit<SearchParams, 'days'> | Omit<SearchParams, 'from'|'to'>,
 	limit: number,
 	start: number,
 ): Promise<Post[]> {
@@ -491,12 +493,17 @@ export async function queryPosts(
 		query.where('author_id', '=', authorId);
 	}
 
-	if (params.from) {
-		query.where('created_at', '>=', params.from);
-	}
+	if ('days' in params && params.days != null && !isNaN(params.days)) {
+		const xDaysAgo = DateTime.now().minus({ days: params.days }).toJSDate();
+		query.where('created_at', '>=', xDaysAgo);
+	} else {
+		if ('from' in params && params.from) {
+			query.where('created_at', '>=', params.from);
+		}
 
-	if (params.to) {
-		query.where('created_at', '<=', params.to);
+		if ('to' in params && params.to) {
+			query.where('created_at', '<=', params.to);
+		}
 	}
 
 	// Escape SQL WHERE wildcards
