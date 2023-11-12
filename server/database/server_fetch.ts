@@ -469,6 +469,11 @@ export async function queryPosts(
 	limit: number,
 	start: number,
 ): Promise<Post[]> {
+	// User deselected all forums.
+	if (params.forums?.length === 0) {
+		return [];
+	}
+
 	let authorId: number;
 	if (params.author) {
 		const author = await knex<User>(Table.USERS)
@@ -484,25 +489,26 @@ export async function queryPosts(
 		authorId = author.id;
 	}
 
+	// We might do a join later on, so we need to be explicit with table names.
 	const query = knex<Post>(Table.POSTS)
-		.select()
+		.select(`${Table.POSTS}.*`)
 		.limit(limit)
 		.offset(start);
 
 	if (params.author) {
-		query.where('author_id', '=', authorId);
+		query.where(`${Table.POSTS}.author_id`, '=', authorId);
 	}
 
 	if ('days' in params && params.days != null && !isNaN(params.days)) {
 		const xDaysAgo = DateTime.now().minus({ days: params.days }).toJSDate();
-		query.where('created_at', '>=', xDaysAgo);
+		query.where(`${Table.POSTS}.created_at`, '>=', xDaysAgo);
 	} else {
 		if ('from' in params && params.from) {
-			query.where('created_at', '>=', params.from);
+			query.where(`${Table.POSTS}.created_at`, '>=', params.from);
 		}
 
 		if ('to' in params && params.to) {
-			query.where('created_at', '<=', params.to);
+			query.where(`${Table.POSTS}.created_at`, '<=', params.to);
 		}
 	}
 
@@ -527,6 +533,23 @@ export async function queryPosts(
 
 		if (params.match === MatchOption.Any) {
 			terms?.forEach(term => query.orWhereRaw(like, [`%${term}%`]));
+		}
+	}
+
+	if (params.forums) {
+		const forumIds = new Set((await knex<Forum>(Table.FORUMS)
+			.select('id'))
+			.map(row => row.id)
+		);
+
+		// Only apply the filter if search query is for a subset of forums.
+		if ( params.forums.length < forumIds.size ||
+			!params.forums.every(id => forumIds.has(id))
+		) {
+			query.innerJoin(Table.TOPICS, join => join
+				.on(`${Table.TOPICS}.id`, '=', `${Table.POSTS}.topic_id`)
+			)
+			.whereIn(`${Table.TOPICS}.forum_id`, params.forums);
 		}
 	}
 

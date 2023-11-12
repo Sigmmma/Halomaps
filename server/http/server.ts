@@ -151,14 +151,14 @@ async function postSearch(request: Request): Promise<SearchResults> {
 	const limit = 20;
 	const start = 0;
 
-	const posts = await database.queryPosts(body, start, limit);
+	const posts = await database.queryPosts(body, limit, start);
 	const users = await database.getUsersById(posts.map(post => post.author_id));
 	const topics = await database.getTopicsById(posts.map(post => post.topic_id));
 	const forums = await database.getForumsById(topics.map(topic => topic.forum_id));
 	return {
 		forums,
 		posts,
-		size: limit,
+		size: posts.length,
 		start,
 		topics,
 		users,
