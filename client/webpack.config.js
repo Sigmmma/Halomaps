@@ -11,7 +11,7 @@ module.exports = {
 				use: 'ts-loader',
 			},
 			{
-				test: /\.(gif|ico|png)$/,
+				test: /\.(gif|ico|png|jpg|JPG)$/,
 				type: 'asset/resource',
 			},
 			{
