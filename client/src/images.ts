@@ -51,6 +51,10 @@ export const Icons = {
 	TOPIC_LOCKED:  image('icons/topic_locked.gif'),
 };
 
+export function avatar(staticPath: string): string {
+	return image(`avatars/${staticPath}`);
+}
+
 function image(staticPath: string): string {
 	return require(`../static/${staticPath}`);
 }

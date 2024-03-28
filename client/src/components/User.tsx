@@ -4,7 +4,7 @@ import { createUseStyles } from 'react-jss';
 import { User } from '../../../server/database/types';
 
 import { DayDate } from './Date';
-import { Icons } from '../images';
+import { Icons, avatar } from '../images';
 
 const useStyles = createUseStyles({
 	container: {
@@ -38,8 +38,7 @@ export function UserAvatar({
 	gap = 0,
 }: UserAvatarProps): JSX.Element {
 	return <>
-		{/* TODO need to load static content somehow */}
-		{user.avatar && <img src={user.avatar} />}
+		{user.avatar && <img src={avatar(user.avatar)} />}
 		{Array(gap).fill(null).map(() => <br />)}
 		{user.quote && <div>{user.quote}</div>}
 	</>;
