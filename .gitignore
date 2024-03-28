@@ -5,3 +5,6 @@ todo
 forum.halomaps.org
 *.txt
 dist
+.vscode
+*.tar.gz
+client/static/avatars
