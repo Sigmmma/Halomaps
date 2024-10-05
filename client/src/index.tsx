@@ -37,7 +37,7 @@ const useGlobalStyles = createUseStyles({
 createRoot(document.getElementById('app-root')!).render(<App />);
 
 /**
-* All queries to Halomaps' forum were done through an endpoint index.cfm.
+* Most queries to Halomaps' forum were done through an endpoint index.cfm.
 * Forums, Topics, Users, etc... were all requested via query parameters to
 * this one endpoint. Halomaps would then render the HTML server-side on-demand,
 * then serve the full page to the client.
@@ -46,8 +46,8 @@ createRoot(document.getElementById('app-root')!).render(<App />);
 *   index.cfm?page=topic&topicID=12345&start=36
 *   index.cfm?page=userInfo&viewuserid=54321
 *
-* Supporting these queries as Halomaps did will preserve links to other forum
-* pages in Post content to continue working with this new mirror.
+* Handling these queries the same way Halomaps did will allow links to other
+* forum pages in Post content to continue working.
 *
 * The only difference is that instead of rendering the HTML server-side, we
 * fetch the raw data as JSON and use React to render it client-side.
@@ -56,6 +56,8 @@ const ROUTER = createBrowserRouter([
 	{ path: '*',          element: <NotFound /> },
 	{ path: '/',          element: <Navigate to='/index.cfm?page=home' /> },
 	{ path: '/index.cfm', element: <QueryRouter /> },
+	// TODO usrSelectAvatar.cfm This showed a list of avatars
+	// TODO usrUploadAvatar.cfm No idea what this looks like
 ]);
 
 const QUERY_ELEMS: Record<string, JSX.Element> = {
@@ -91,15 +93,15 @@ function App(): JSX.Element {
 	const [renderDuration, setRenderDuration] = useState<number>();
 
 	return <>
+	{/* FIXME this doesn't actually work. Interactive pages trigger re-renders which update this time value. */}
 		<Profiler id={PERF_NAME} onRender={() => {
 			const duration = performance.measure(PERF_NAME).duration;
 			setRenderDuration(Math.round(duration));
-			console.log(duration);
 		}}>
 			<FullHeader />
 			<RouterProvider router={ROUTER} />
 		</Profiler>
-		{renderDuration && <Footer date={new Date()} duration={renderDuration} /> }
+		<Footer date={new Date()} duration={undefined /*renderDuration*/} />
 	</>;
 }
 

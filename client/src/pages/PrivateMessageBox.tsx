@@ -6,8 +6,13 @@ import { User } from '../../../server/database/types';
 import Button from '../components/Button';
 import Checkbox from '../components/Checkbox';
 import { RelDate } from '../components/Date';
+import PrivateMessageControls, { ButtonKey } from '../components/PrivateMessageControls';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { Icons } from '../images';
+
+// TODO leaving this one alone for now.
+// We'll probably want to invent some fake data for this page,
+// as well as support switching views
 
 type CheckMap = { [k: number]: boolean };
 
@@ -24,6 +29,11 @@ const useStyles = createUseStyles({
 	image: {
 		height: '30px',
 	},
+	note: {
+		color: 'red',
+		fontWeight: 'bold',
+		textAlign: 'center',
+	},
 	subject: {
 		fontWeight: 'bold',
 		marginLeft: '5px',
@@ -34,8 +44,8 @@ const TEST_ROWS: PrivateMessage[] = [{
 	id: 12,
 	content: 'test stuff',
 	from: {
-		name: 'Dude',
-		id: 123,
+		name: 'Donut',
+		id: 1683,
 	},
 	read: true,
 	sentAt: new Date(),
@@ -44,8 +54,8 @@ const TEST_ROWS: PrivateMessage[] = [{
 	id:34,
 	content: 'test stuff',
 	from: {
-		name: 'Dude',
-		id: 123,
+		name: 'Donut',
+		id: 1683,
 	},
 	read: false,
 	sentAt: new Date(),
@@ -123,12 +133,18 @@ export default function PrivateMessageBox(): JSX.Element {
 		onUnmarkAll={() => setCheckMap(makeCheckMap(TEST_ROWS, false))}
 	/>), []);
 
-	return (
+	return <>
+		<PrivateMessageControls selectedKey={ButtonKey.INBOX}/>
+		<div className={styles.note}>
+			This is temporary test data.
+			This page is barely functional,
+			and we don't have a good reference for a lot of it.
+		</div>
 		<Table
 			columns={COLUMNS}
 			rows={[...TEST_ROWS, bottomBar]}
 		/>
-	);
+	</>;
 }
 
 // Helper for setting all checkboxes checked or unchecked.
@@ -162,19 +178,22 @@ function BottomBar({
 	onUnmarkAll,
 }: BottomBarProps): JSX.Element {
 	const styles = useBarStyles();
-
 	return (
 		<Separator
 			className={styles.bar}
 			content={<>
+				{/* TODO pop up a little "not supported" bar */}
 				<Button text='Save Marked' className={styles.button} />&nbsp;
 				<Button text='Deleted Marked' className={styles.button} />
+
 				&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+
 				<Button
 					className={styles.button}
 					text='Mark All'
 					onClick={onMarkAll}
 				/>&nbsp;
+
 				<Button
 					className={styles.button}
 					text='Unmark All'

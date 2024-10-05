@@ -1,7 +1,7 @@
 {
   "name": "halomaps-forum-client",
   "version": "0.0.0",
-  "description": "This is an open source, read-only reimplementation of the Halomaps forum (http://forum.halomaps.org) to browse our archive that preserves usernames and IDs.",
+  "description": "This is an open source, read-only re-implementation of the Halomaps forum (http://forum.halomaps.org) to browse our archive that preserves usernames and IDs.",
   "private": true,
   "repository": {
     "type": "git",

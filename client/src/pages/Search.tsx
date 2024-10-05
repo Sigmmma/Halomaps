@@ -29,6 +29,12 @@ const useSharedStyles = createUseStyles({
 	label: {
 		fontWeight: 'bold',
 	},
+	note: {
+		color: 'darkorange',
+		fontWeight: 'bold',
+		marginTop: '5px',
+		textAlign: 'center',
+	},
 	pane: {
 		marginLeft: 0,
 		marginTop: '3px',
@@ -46,17 +52,23 @@ export default function Search(): JSX.Element {
 	const [params, updateParams] = useSetState<SearchParams>();
 
 	// TODO search params should be in URL so people can copy/paste them
-	const [searchState, doSearch] = useAsyncFn(async () => (
-		Client.postSearch(params)
-	), [params]);
+	const [searchState, doSearch] = useAsyncFn(async () => {
+		// const res = Client.postSearch(params);
+		// console.log(res);
+		// return res;
+	}, [params]);
 
-	console.log(searchState);
+	// console.log(params);
 
 	return (
 		// TODO top bar needs to be a little taller.
 		// TODO need a small margin below the top bar.
 		<Pane title='Search' className={styles.pane}>
 			<div className={styles.centered}>
+				<div className={styles.note}>
+					Search is under construction still.<br/>
+					The search button does nothing (yet).
+				</div>
 				<SearchCriteria params={params} updateParams={updateParams} doSearch={doSearch} />
 				<br/>
 				<DateCriteria params={params} updateParams={updateParams} />

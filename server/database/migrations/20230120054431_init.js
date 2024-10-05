@@ -108,6 +108,8 @@ exports.up = async function(knex) {
 			'Contains HTML tags adjusted to work with statically served CSS.'
 		);
 		table.timestamp('mirrored_at').notNullable();
+
+		// TODO index over created_at for speed
 	});
 };
 

@@ -169,6 +169,15 @@ async function postSearch(request: Request): Promise<SearchResults> {
  *
  */
 async function getMembers(request: Request) {
+	// sort=joined,lastpost,posts,name,website,location
+	// order=desc,asc
+	// /members/all
+	// /members/A
+
+	//
+	// user
+	// last_post_date
+	// post_count
 	return 'TODO';
 }
 
@@ -242,6 +251,8 @@ async function getUser(request: Request): Promise<UserInfo> {
 	const userId = getNumberParam(request, USER_ID);
 
 	const board_post_count = await database.getBoardPostCount();
+	// TODO investigate why we're getting such a smaller number of posts
+	// compared to what the archive has.
 	const posts = await database.getUserPosts(userId);
 	const user = await database.getUserWithPostCount(userId);
 
@@ -314,6 +325,8 @@ async function getTopicPosts(request: Request): Promise<TopicPostPage> {
 		...postsAndUsers,
 	};
 }
+
+// TODO factor server functions out
 
 /** An Error that can specify an HTTP response code. */
 class RequestError extends Error {
