@@ -250,11 +250,15 @@ async function getForumTopics(request: Request): Promise<TopicList> {
 async function getUser(request: Request): Promise<UserInfo> {
 	const userId = getNumberParam(request, USER_ID);
 
+	const user = await database.getUserWithPostCount(userId);
+	if (!user) {
+		throw new RequestError(404, 'No user with this ID');
+	}
+
 	const board_post_count = await database.getBoardPostCount();
 	// TODO investigate why we're getting such a smaller number of posts
 	// compared to what the archive has.
 	const posts = await database.getUserPosts(userId);
-	const user = await database.getUserWithPostCount(userId);
 
 	const topicIds = new Set(posts.map(post => post.topic_id));
 	const topics = await database.getTopicsById([...topicIds]);

@@ -29,6 +29,7 @@ export default function User(): JSX.Element {
 	}, [userId]);
 
 	return <AsyncContent state={userQuery} render={(userInfo) => {
+		// TODO better UI when user is undefined?
 		const { user, board_post_count, forums, posts, topics } = userInfo;
 		const forumMap = mapById(forums);
 		const topicMap = mapById(topics);
