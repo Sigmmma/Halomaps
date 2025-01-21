@@ -10,8 +10,7 @@ import {
 	SearchResults,
 } from '../../server/http/types';
 
-// TODO need to configure this somewhere
-const BASE_URL = 'http://localhost:9123';
+const BASE_URL = process.env.SERVER_URL;
 
 function handlePossibleRequestError(response: Response) {
 	if (response.status >= 400) {

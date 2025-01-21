@@ -53,9 +53,9 @@ createRoot(document.getElementById('app-root')!).render(<App />);
 * fetch the raw data as JSON and use React to render it client-side.
 */
 const ROUTER = createBrowserRouter([
-	{ path: '*',          element: <NotFound /> },
-	{ path: '/',          element: <Navigate to='/index.cfm?page=home' /> },
-	{ path: '/index.cfm', element: <QueryRouter /> },
+	{ path: '*', element: <NotFound /> },
+	{ path: '/', element: <Navigate to='/index.cfm' replace /> },
+	{ path: `${process.env.CLIENT_BASE_URL}/index.cfm`, element: <QueryRouter /> },
 	// TODO usrSelectAvatar.cfm This showed a list of avatars
 	// TODO usrUploadAvatar.cfm No idea what this looks like
 ]);

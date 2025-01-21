@@ -1,7 +1,57 @@
+const { existsSync } = require('fs');
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-module.exports = {
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { DefinePlugin } = require('webpack');
+const { merge } = require('webpack-merge');
+
+// TODO can we make this less stupid? This is stupid.
+const PROD_CONF_FILE = '../prod_conf.json';
+const prodConfig = existsSync(PROD_CONF_FILE) ? require(PROD_CONF_FILE) : {};
+
+const DEFAULT_SERVER_URL = 'http://localhost:9123';
+
+function processEnvPlugin({ server_url, client_base_url }) {
+	return new DefinePlugin({
+		'process.env': {
+			SERVER_URL: JSON.stringify(server_url),
+			CLIENT_BASE_URL: JSON.stringify(client_base_url),
+		},
+	});
+}
+
+const DEV_CONFIG = {
+	mode: 'development',
+	devtool: 'inline-source-map',
+	devServer: {
+		historyApiFallback: {
+			verbose: true,
+		},
+	},
+	plugins: [processEnvPlugin({
+		server_url: DEFAULT_SERVER_URL,
+		client_base_url: '', // On localhost with no webserver
+	})],
+};
+
+const PROD_CONFIG = {
+	mode: 'production',
+	devServer: {
+		port: prodConfig.clientPort,
+		historyApiFallback: {
+			verbose: true,
+		},
+	},
+	performance: {
+		hints: false,
+	},
+	plugins: [processEnvPlugin({
+		server_url: prodConfig.serverUrl ?? DEFAULT_SERVER_URL,
+		client_base_url: prodConfig.clientBaseUrl ?? '',
+	})],
+};
+
+module.exports = merge({
 	entry: './src/index.tsx',
 	module: {
 		rules: [
@@ -11,7 +61,7 @@ module.exports = {
 				use: 'ts-loader',
 			},
 			{
-				test: /\.(gif|ico|png|jpg|JPG)$/,
+				test: /\.(gif|ico|png|jpg)$/i,
 				type: 'asset/resource',
 			},
 			{
@@ -32,17 +82,15 @@ module.exports = {
 		extensions: ['.tsx', '.ts', '.js'],
 	},
 	output: {
-		filename: '[name].js',
+		clean: true,
+		filename: '[name].bundle.js',
 		path: path.resolve(__dirname, 'dist'),
-		publicPath: '/index.cfm',
 	},
-	mode: process.argv.NODE_ENV === 'production' ? 'production' : 'development',
-	devtool: 'inline-source-map',
 	devServer: {
-		// Need "server" to handle initial redirect so we can actually load React.
-		// See: https://ui.dev/react-router-cannot-get-url-refresh
 		historyApiFallback: {
-			index: '/index.cfm',
+			disableDotRule: true,
 		},
+		static: './static',
+		port: 9000,
 	},
-};
+}, process.env.NODE_ENV === 'production' ? PROD_CONFIG : DEV_CONFIG);
