@@ -18,6 +18,7 @@ import PostContent from '../components/Post';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserAvatar } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
+import { clientUrl } from '../url';
 
 export default function User(): JSX.Element {
 	const [params] = useCaselessSearchParams();
@@ -185,7 +186,7 @@ function UserContact({ user }: UserProfileProps): JSX.Element {
 	return (
 		<a
 			className={styles.link}
-			href={`index.cfm?page=privateMessageNew&messageTo=${user.name}`}
+			href={clientUrl(`index.cfm?page=privateMessageNew&messageTo=${user.name}`)}
 		>
 			Send Private Message
 		</a>
@@ -260,11 +261,11 @@ function UserPost({
 	return (
 		<div className={styles.indent}>
 			<div className={styles.path}>
-				<a href={`/index.cfm?page=forum&forumID=${forum.id}`}>
+				<a href={clientUrl(`/index.cfm?page=forum&forumID=${forum.id}`)}>
 					{forum.name}
 				</a>
 				{' » '}
-				<a href={`/index.cfm?page=topic&topicID=${topic.id}`}>
+				<a href={clientUrl(`/index.cfm?page=topic&topicID=${topic.id}`)}>
 					{topic.name}
 				</a>
 				{' '}

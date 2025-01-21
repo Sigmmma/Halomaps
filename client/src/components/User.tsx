@@ -5,6 +5,7 @@ import { User } from '../../../server/database/types';
 
 import { DayDate } from './Date';
 import { Icons, avatar } from '../images';
+import { clientUrl } from '../url';
 
 const useStyles = createUseStyles({
 	container: {
@@ -45,7 +46,7 @@ export function UserAvatar({
 }
 
 export function UserLink({ user }: UserLinkProps): JSX.Element {
-	return <a href={`index.cfm?page=userinfo&userid=${user.id}`}>
+	return <a href={clientUrl(`index.cfm?page=userinfo&userid=${user.id}`)}>
 		{user.name}
 	</a>;
 }

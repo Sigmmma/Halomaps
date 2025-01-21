@@ -2,6 +2,7 @@ import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import { Design, Icons } from '../images';
+import { clientUrl } from '../url';
 
 export default function FullHeader(): JSX.Element {
 	return <>
@@ -56,7 +57,9 @@ function Header(): JSX.Element {
 
 				<a
 					className={styles.disclaimer}
-					href='/index.cfm?page=archiveinfo'
+					// TODO we want a better on-site page explaining this archive
+					href='https://github.com/Sigmmma/Halomaps'
+					//href={clientUrl('/index.cfm?page=archiveinfo')}
 				>The Community Archive</a>
 			</div>
 		</div>
@@ -195,18 +198,18 @@ function Controls({
 		{
 			label: 'My Forums',
 			icon: Icons.MY_FORUMS,
-			url: 'index.cfm?page=myforum',
+			url: clientUrl('index.cfm?page=myforum'),
 		},
 		{
 			label: 'Private Messages',
 			icon: Icons.MESSAGES,
-			url: 'index.cfm?page=private_messages',
+			url: clientUrl('index.cfm?page=private_messages'),
 			after: messages ? ` (${messages})` : '',
 		},
 		{
 			label: `Logout [${loginName}]`,
 			icon: Icons.LOGOUT,
-			url: 'index.cfm?page=logout&eflag=logout',
+			url: clientUrl('index.cfm?page=logout&eflag=logout'),
 		},
 	];
 
@@ -222,7 +225,7 @@ function Controls({
 					))
 					.map((item, idx) => (
 						<div className={styles.item} key={idx}>
-							<a href={item.url}>
+							<a href={clientUrl(item.url)}>
 								<img className={styles.icon} src={item.icon} />
 								{item.label}
 							</a>
@@ -235,7 +238,7 @@ function Controls({
 
 					{ loggedInItems.map((item, index) => (
 						<div className={styles.item} key={index}>
-							<a href={item.url}>
+							<a href={clientUrl(item.url)}>
 								<img className={styles.icon} src={item.icon} />
 								{item.label}
 							</a>

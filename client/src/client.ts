@@ -9,20 +9,14 @@ import {
 	SearchParams,
 	SearchResults,
 } from '../../server/http/types';
+import { normalizeUrl } from './url';
 
-const URL_NORMALIZER = new RegExp(/\/{2,}/g);
 const BASE_URL = process.env.SERVER_URL ?? '/';
 
 function handlePossibleRequestError(response: Response) {
 	if (response.status >= 400) {
 		throw new Error(`${response.status} ${response.statusText}`);
 	}
-}
-
-function normalizeUrl(...parts: string[]): URL {
-	return new URL(
-		parts.join('/').replaceAll(URL_NORMALIZER, '/')
-	);
 }
 
 async function toData<T = unknown>(response: Response): Promise<T> {
@@ -39,7 +33,7 @@ export default class Client {
 		path: string,
 		params?: Record<string, string>,
 	): Promise<T> {
-		const url = normalizeUrl(BASE_URL, path);
+		const url = new URL(normalizeUrl(BASE_URL, path));
 		Object
 			.entries(params ?? {})
 			.filter(([_key, value]) => value)
@@ -56,7 +50,7 @@ export default class Client {
 		path: string,
 		data?: unknown,
 	): Promise<T> {
-		const url = normalizeUrl(BASE_URL, path);
+		const url = new URL(normalizeUrl(BASE_URL, path));
 		const response = await fetch(url, {
 			method: 'post',
 			headers: {

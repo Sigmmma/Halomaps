@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import { Pane } from '../components/Pane';
 import Warning from '../components/Warning';
+import { clientUrl } from '../url';
 
 const useStyles = createUseStyles({
 	button: {
@@ -46,9 +47,9 @@ export default function Password(): JSX.Element {
 
 		<div className={styles.links}>
 			<Warning display={showWarning} label='Password reset' />
-			<a href='index.cfm?page=login'>Back to login page</a>
+			<a href={clientUrl('index.cfm?page=login')}>Back to login page</a>
 			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-			<a href='index.cfm?page=register'>Create new account</a>
+			<a href={clientUrl('index.cfm?page=register')}>Create new account</a>
 		</div>
 	</>;
 }

@@ -14,6 +14,7 @@ import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserLink } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Icons } from '../images';
+import { clientUrl } from '../url';
 
 interface TableRowInfo {
 	forum: ForumWithPost;
@@ -138,7 +139,7 @@ function ForumInfo({ info }: ForumInfoProps): JSX.Element {
 				: <></>
 			}
 
-			<b><a href={`/index.cfm?page=forum&forumId=${forum.id}`}>
+			<b><a href={clientUrl(`/index.cfm?page=forum&forumId=${forum.id}`)}>
 				{forum.name}
 			</a></b>
 
@@ -184,7 +185,7 @@ function PostInfo({
 		<div className={styles.text}>
 			<RelDate date={info.post.created_at} /><br/>
 			<UserLink user={info.user} />
-			<a href={`/index.cfm?page=topic&eflag=findlasttopic&forumID=${forumId}`}>
+			<a href={clientUrl(`/index.cfm?page=topic&eflag=findlasttopic&forumID=${forumId}`)}>
 				<img className={styles.icon} src={Icons.TOPIC_JUMP} />
 			</a>
 		</div>

@@ -17,6 +17,7 @@ import PostContent from '../components/Post';
 import { Column, InlineElement, Separator, Table } from '../components/Table';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Buttons } from '../images';
+import { clientUrl } from '../url';
 
 interface TopicInfoResponse {
 	info: TopicInfo;
@@ -105,7 +106,7 @@ export default function Topic(): JSX.Element {
 				start={page.start}
 				buildUrl={(pageNum) => {
 					const start = ((pageNum - 1) * page.size) + 1;
-					return `/index.cfm?page=topic&topicID=${info.topic.id}&start=${start}`;
+					return clientUrl(`/index.cfm?page=topic&topicID=${info.topic.id}&start=${start}`);
 				}}
 			/>
 		);
@@ -113,16 +114,16 @@ export default function Topic(): JSX.Element {
 		const pathParts: PathPart[] = [
 			{
 				name: info.category.name,
-				url: `/index.cfm?page=home&categoryID=${info.category.id}`,
+				url: clientUrl(`/index.cfm?page=home&categoryID=${info.category.id}`),
 			},
 			{
 				name: info.forum.name,
-				url: `/index.cfm?page=forum&forumID=${info.forum.id}`,
+				url: clientUrl(`/index.cfm?page=forum&forumID=${info.forum.id}`),
 			},
 			{
 				name: info.topic.name,
 				locked: info.topic.locked,
-				url: `/index.cfm?page=topic&topicID=${info.topic.id}`,
+				url: clientUrl(`/index.cfm?page=topic&topicID=${info.topic.id}`),
 			},
 		];
 
@@ -211,15 +212,15 @@ function PostReplyBar({
 	const styles = usePostReplyBarStyles()
 	return (
 		<div className={styles.container}>
-			<a href={
+			<a href={clientUrl(
 				`/index.cfm?page=newreply&topicID=${topicId}&replyID=${postId}#NEWMSG`
-			}>
+			)}>
 				<img src={Buttons.REPLY_POST} title='Reply to Post' />
 			</a>
 			{' '}
-			<a href={
+			<a href={clientUrl(
 				`/index.cfm?page=newreply&topicID=${topicId}&quoteID=${postId}#NEWMSG`
-			}>
+			)}>
 				<img src={Buttons.REPLY_QUOTE} title='Quote Post' />
 			</a>
 		</div>
@@ -253,11 +254,11 @@ function TopicReplyBar({
 	return (
 		<div className={styles.container}>
 			<div className={styles.buttons}>
-				<a href={`/index.cfm?page=newtopic&forumID=${forumId}`}>
+				<a href={clientUrl(`/index.cfm?page=newtopic&forumID=${forumId}`)}>
 					<img src={Buttons.NEW_TOPIC} />
 				</a>
 				{' '}
-				<a href={`/index.cfm?page=newreply&topicID=${topicId}#NEWMSG`}>
+				<a href={clientUrl(`/index.cfm?page=newreply&topicID=${topicId}#NEWMSG`)}>
 					<img src={Buttons.REPLY_TOPIC} />
 				</a>
 			</div>
@@ -289,13 +290,13 @@ function TopicLinks({
 		<div className={styles.container}>
 			<div className={styles.links}>
 				{topicOlderId && (
-					<a href={`/index.cfm?page=topic&topicID=${topicOlderId}`}>
+					<a href={clientUrl(`/index.cfm?page=topic&topicID=${topicOlderId}`)}>
 						Previous Older Thread
 					</a>
 				)}
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				{topicNewerId && (
-					<a href={`/index.cfm?page=topic&topicID=${topicNewerId}`}>
+					<a href={clientUrl(`/index.cfm?page=topic&topicID=${topicNewerId}`)}>
 						Next newer Thread
 					</a>
 				)}

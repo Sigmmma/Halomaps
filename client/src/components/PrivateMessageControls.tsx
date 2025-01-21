@@ -1,8 +1,9 @@
+import classNames from 'classnames';
 import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import { Icons } from '../images';
-import classNames from 'classnames';
+import { clientUrl } from '../url';
 
 interface PrivateMessageControlsProps {
 	selectedKey?: ButtonKey;
@@ -49,7 +50,7 @@ export default function PrivateMessageControls({
 		<div className={styles.bar}>{
 			BUTTON_DEFS.map((def, index) => (
 				<div className={styles.item} key={index}>
-					<a href={def.url}>
+					<a href={clientUrl(def.url)}>
 						<img src={def.icon} />
 						<div className={classNames(styles.label, {
 							[styles.bold]: def.key === selectedKey,

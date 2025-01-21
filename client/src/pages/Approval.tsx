@@ -2,6 +2,7 @@ import React, { JSX } from 'react';
 import { createUseStyles } from 'react-jss';
 
 import { Pane } from '../components/Pane';
+import { clientUrl } from '../url';
 
 const useStyles = createUseStyles({
 	link: {
@@ -30,7 +31,7 @@ export default function Approval(): JSX.Element {
 		</Pane>
 
 		<div className={styles.link}>
-			<a href='index.cfm?page=home'>Back to forums home</a>
+			<a href={clientUrl('index.cfm?page=home')}>Back to forums home</a>
 		</div>
 	</>;
 }

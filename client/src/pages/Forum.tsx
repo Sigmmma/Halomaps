@@ -14,6 +14,7 @@ import { Column, InlineElement, Separator, Table } from '../components/Table';
 import { UserLink } from '../components/User';
 import useCaselessSearchParams from '../hooks/useSearchParamsCaseInsensitive';
 import { Icons } from '../images';
+import { clientUrl } from '../url';
 
 const POPULAR_THRESHOLD = 100;
 const POSTS_PER_PAGE = 35;
@@ -94,11 +95,11 @@ export default function Forum(): JSX.Element {
 		<Path parts={[
 			{
 				name: info.category.name,
-				url: `/index.cfm?page=home&categoryID=${info.category.id}`,
+				url: clientUrl(`/index.cfm?page=home&categoryID=${info.category.id}`),
 			},
 			{
 				name: info.forum.name,
-				url: `/index.cfm?page=forum&forumID=${info.forum.id}`,
+				url: clientUrl(`/index.cfm?page=forum&forumID=${info.forum.id}`),
 			},
 		]} />
 
@@ -119,7 +120,7 @@ export default function Forum(): JSX.Element {
 				start={list.start}
 				buildUrl={(page: number): string => {
 					const start = ((page - 1) * TOPICS_PER_PAGE) + 1;
-					return `/index.cfm?page=forum&forumID=${forumId}&start=${start}`
+					return clientUrl(`/index.cfm?page=forum&forumID=${forumId}&start=${start}`);
 				}}
 			/>
 			<br />
@@ -153,7 +154,7 @@ function TopicInfo({ topic }: TopicProp): JSX.Element {
 			}
 
 			<span className={styles.title}>
-				<b><a href={`/index.cfm?page=topic&topicID=${topic.id}`}>
+				<b><a href={clientUrl(`/index.cfm?page=topic&topicID=${topic.id}`)}>
 					{topic.name}
 				</a></b>
 			</span>
@@ -165,7 +166,7 @@ function TopicInfo({ topic }: TopicProp): JSX.Element {
 				pageSize={POSTS_PER_PAGE}
 				buildUrl={(page: number): string => {
 					const start = ((page - 1) * POSTS_PER_PAGE) + 1;
-					return `/index.cfm?page=topic&topicID=${topic.id}&start=${start}`;
+					return clientUrl(`/index.cfm?page=topic&topicID=${topic.id}&start=${start}`);
 				}}
 			/>
 		</div>

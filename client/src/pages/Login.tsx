@@ -7,6 +7,7 @@ import { FieldTable, TableRow } from '../components/Form';
 import Input from '../components/Input';
 import { Pane } from '../components/Pane';
 import Warning from '../components/Warning';
+import { clientUrl } from '../url';
 
 const useStyles = createUseStyles({
 	center: {
@@ -47,9 +48,9 @@ export default function Login(): JSX.Element {
 
 		<div className={styles.center}>
 			<Warning display={showWarning} label='Login' />
-			<a href='index.cfm?page=forgotPassword'>Forgot your password?</a>
+			<a href={clientUrl('index.cfm?page=forgotPassword')}>Forgot your password?</a>
 			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-			<a href='index.cfm?page=register'>Create new account</a>
+			<a href={clientUrl('index.cfm?page=register')}>Create new account</a>
 		</div>
 	</>;
 }

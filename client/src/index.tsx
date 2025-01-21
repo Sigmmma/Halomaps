@@ -93,7 +93,7 @@ function App(): JSX.Element {
 	const [renderDuration, setRenderDuration] = useState<number>();
 
 	return <>
-	{/* FIXME this doesn't actually work. Interactive pages trigger re-renders which update this time value. */}
+	{/* FIXME this doesn't actually work. Interactive pages trigger re-renders which update this time value. Can we use-state here for one-time set?*/}
 		<Profiler id={PERF_NAME} onRender={() => {
 			const duration = performance.measure(PERF_NAME).duration;
 			setRenderDuration(Math.round(duration));
